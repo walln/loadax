@@ -1,21 +1,13 @@
 from loadax.strategy import FixedBatchStrategy, BatchStrategy
 from loadax.batcher import Batcher
-from loadax.batch_loader import MultiThreadedBatchDataLoader, BatchDataLoader
+from loadax.batch_loader import BatchDataLoader, PrefetchBatchLoader
 from loadax.dataset import Dataset
-from loadax.transform.partial import PartialDataset
-
-
-class SingleThreadedBatchDataloader:
-    def __init__(
-        self, dataset: Dataset, batcher: Batcher, strategy: BatchStrategy, rng: int
-    ):
-        pass
 
 
 class DataLoaderBuilder:
     strategy: BatchStrategy | None = None
-    seed: int | None = None
     num_threads: int | None = None
+    prefetch_factor: int | None = None
 
     def __init__(self, batcher: Batcher):
         self.batcher = batcher
@@ -24,37 +16,33 @@ class DataLoaderBuilder:
         self.strategy = FixedBatchStrategy(batch_size)
         return self
 
-    def shuffle(self, seed: int):
-        self.seed = seed
-        return self
+    # def shuffle(self, seed: int):
+    #     self.seed = seed
+    #     return self
 
     def num_workers(self, num_threads: int):
         self.num_threads = num_threads
         return self
 
+    def pretech(self, factor: int):
+        self.prefetch_factor = factor
+        return self
+
     def build(self, dataset: Dataset):
         strategy = self.strategy if self.strategy else FixedBatchStrategy(1)
-        rng = self.seed if self.seed else None
+
+        if self.prefetch_factor:
+            print("Creating prefetch dataloader")
+            return PrefetchBatchLoader(
+                dataset=dataset,
+                strategy=strategy,
+                batcher=self.batcher,
+                prefetch_factor=self.prefetch_factor,
+            )
 
         if self.num_threads:
-            print(f"Splitting dataset into {self.num_threads} chunks")
-            datasets = PartialDataset.split(dataset, self.num_threads)
-            print(f"Created {len(datasets)} datasets")
-            print(f"Dataset sizes: {[len(dataset) for dataset in datasets]}")
-            # TODO: PRNG key splitting
-            rngs = [rng for _ in range(self.num_threads)]
-            dataloaders = [
-                BatchDataLoader(
-                    dataset=dataset, batcher=self.batcher, strategy=strategy, rng=rng
-                )
-                for (dataset, rng) in zip(datasets, rngs)
-            ]
             print("Creating multi threaded dataloader")
-            return MultiThreadedBatchDataLoader(
-                dataloaders=dataloaders,
-            )
-        else:
-            print("Creating single threaded dataloader")
-            return BatchDataLoader(
-                dataset=dataset, batcher=self.batcher, strategy=strategy, rng=rng
-            )
+            raise NotImplementedError
+
+        print("Creating single threaded dataloader")
+        return BatchDataLoader(dataset=dataset, batcher=self.batcher, strategy=strategy)

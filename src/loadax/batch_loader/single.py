@@ -47,23 +47,19 @@ class BatchDataLoader(DataLoader):
         dataset: Dataset,
         batcher: Batcher,
         strategy: BatchStrategy,
-        rng: int | None,
     ):
         self.dataset = dataset
         self.batcher = batcher
         self.strategy = strategy
-        self.rng = rng
 
     def num_items(self) -> int:
         return len(self.dataset)
 
+    def num_batches(self) -> int:
+        return self.num_items() // self.strategy.batch_size
+
+    def __len__(self) -> int:
+        return self.num_batches()
+
     def __iter__(self):
-        # when starting the iterator, we need to check if the loader was created with a shuffling strategy
-        # if so, we need to shuffle the dataset before starting the iterator
-
-        if not self.rng:
-            dataset = self.dataset
-        # elif self.rng:
-        #     ShuffledDataset(self.dataset, self.rng)
-
-        return BatchDataLoaderIterator(dataset, self.strategy, self.batcher)
+        return BatchDataLoaderIterator(self.dataset, self.strategy, self.batcher)

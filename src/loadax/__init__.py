@@ -5,7 +5,7 @@ from loadax.loader_builder import DataLoaderBuilder
 
 def processing_function(items):
     # print(f"Items: {items}")
-    return sum(items)
+    return [2 * item for item in items]
 
 
 def create_dataset(size):
@@ -28,52 +28,37 @@ def create_dataloader(dataset, batch_size, num_workers):
 
 
 def collect_values(dataloader, batch_size, dataset_size):
-    values = []
-    iterator = iter(dataloader)
-    total_batches = (
-        dataset_size + batch_size - 1
-    ) // batch_size  # Ceiling division to get total batches
+    batches = []
 
-    for batch_index in range(total_batches):
-        val = next(iterator)
-        print(f"Value: {val}")
-        values.append(val)
-        print(f"Progress: {iterator.progress()}")
+    for batch_index, batch in enumerate(dataloader):
+        val = batch
+        # print(f"Value: {val}")
+        # print(f"Progress: {iterator.progress()}")
+        print(f"Batch index: {batch_index} of size {len(val)}")
 
         # Check if the sum of items in the batch matches the expected sum
-        expected_batch_sum = sum(
-            range(
-                batch_index * batch_size,
-                min((batch_index + 1) * batch_size, dataset_size),
-            )
-        )
         assert (
-            val == expected_batch_sum
-        ), f"Batch sum mismatch: got {val}, expected {expected_batch_sum}"
+            len(val) == batch_size
+        ), f"Batch size mismatch: got {len(val)}, expected {batch_size}"
+        assert all(
+            item % 2 == 0 for item in val
+        ), f"Batch values must be even: got {val}"
 
-    return values
+        batches.append(batch_index)
+
+    return batches
 
 
 if __name__ == "__main__":
-    dataset_size = 1000
+    dataset_size = 1_000
     batch_size = 10
     num_workers = 4
 
     dataset = create_dataset(dataset_size)
     dataloader = create_dataloader(dataset, batch_size, num_workers)
-    values = collect_values(dataloader, batch_size, dataset_size)
+    batches = collect_values(dataloader, batch_size, dataset_size)
 
     # Assertions for final results
     total_batches = (dataset_size + batch_size - 1) // batch_size
-    assert (
-        len(values) == total_batches
-    ), f"Number of batches mismatch: got {len(values)}, expected {total_batches}"
 
-    print(f"Total values: {len(values)}")
-    print(f"Sum of all values: {sum(values)}")
-
-    expected_sum = sum(range(dataset_size))  # Sum of numbers from 0 to dataset_size-1
-    actual_sum = sum(values)
-    assert (
-        actual_sum == expected_sum
-    ), f"Sum mismatch: got {actual_sum}, expected {expected_sum}"
+    print(f"Total batches: {len(batches)}")
