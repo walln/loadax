@@ -5,3 +5,4 @@ from loadax.dataset.transform.sampled import (
     SampledDatasetWithoutReplacement as SampledDatasetWithoutReplacement,
     SampledDatasetWithReplacement as SampledDatasetWithReplacement,
 )
+from loadax.dataset.transform.shuffled import ShuffledDataset as ShuffledDataset

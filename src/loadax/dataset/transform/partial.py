@@ -28,13 +28,8 @@ class PartialDataset(Dataset[T]):
 
     def get(self, index: int) -> T | None:
         if index < 0 or index >= len(self):
-            # raise IndexError(f"Index {index} out of range")
             return None
         return self.dataset.get(index + self.start_index)
-        # index = index + self.start_index
-        # if index < self.start_index or index >= self.end_index:
-        #     return None
-        # return self.dataset.get(index)
 
     def __len__(self) -> int:
         return min(self.end_index - self.start_index, len(self.dataset))
