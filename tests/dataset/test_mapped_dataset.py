@@ -1,6 +1,6 @@
 import pytest
 from loadax.dataset.in_memory import InMemoryDataset
-from loadax.dataset.mapped import MappedDataset
+from loadax.dataset.transform.mapped import MappedDataset
 
 
 def test_mapped_dataset_basic():

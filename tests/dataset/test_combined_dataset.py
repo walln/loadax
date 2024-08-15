@@ -1,5 +1,5 @@
 from loadax.dataset.in_memory import InMemoryDataset
-from loadax.dataset.combined import CombinedDataset
+from loadax.dataset.transform.combined import CombinedDataset
 
 
 def test_combined_dataset_basic():
