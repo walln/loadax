@@ -1,9 +1,3 @@
-from typing import Protocol, Generic
-from typing import TypeVar
-
-T = TypeVar("I")
-
-
 class Progress:
     items_processed: int
     items_total: int
@@ -14,12 +8,3 @@ class Progress:
 
     def __repr__(self):
         return f"Progress(items_processed={self.items_processed}, items_total={self.items_total})"
-
-
-class DataLoaderIterator(Protocol, Generic[T]):
-    def progress(self) -> Progress: ...
-
-
-class DataLoader(Protocol, Generic[T]):
-    def __iter__(self) -> DataLoaderIterator: ...
-    def num_items(self) -> int: ...
