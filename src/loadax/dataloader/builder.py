@@ -27,13 +27,13 @@ class DataLoader:
     def build(self, dataset: Dataset):
         strategy = self.strategy if self.strategy else FixedBatchStrategy(1)
 
-        if self.num_workers:
+        if self.num_workers or self.prefetch_factor:
             print("Creating multiprocessing dataloader")
             return MultiProcessingDataLoader(
                 dataset=dataset,
                 strategy=strategy,
                 batcher=self.batcher,
-                num_workers=self.num_workers,
+                num_workers=self.num_workers or 1,
                 prefetch_factor=self.prefetch_factor,
             )
 

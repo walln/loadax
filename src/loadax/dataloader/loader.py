@@ -53,7 +53,9 @@ class MultiProcessingDataLoaderIterator(DataLoaderIteratorProtocol[Batch]):
             self.prefetch_index < len(self.dataloader.dataset)
             and self.prefetch_index
             < self.current_index
-            + 2 * self.dataloader.num_workers * self.dataloader.strategy.batch_size
+            + self.dataloader.prefetch_factor
+            * self.dataloader.num_workers
+            * self.dataloader.strategy.batch_size
         ):
             # if the prefetch index hasnt reached the end of the dataset and it is not 2 batches ahead of the current index, we can add more indexes to be prefetched
             self.index_queues[next(self.worker_cycle)].put(self.prefetch_index)
