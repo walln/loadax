@@ -1,14 +1,14 @@
-from loadax.dataset.dataset import Dataset
-from typing import Generic, TypeVar
+from loadax.dataset.protocol import Dataset
+from typing import TypeVar
 
-T = TypeVar("T")
+DatasetItem = TypeVar("DatasetItem")
 
 
-class InMemoryDataset(Dataset, Generic[T]):
-    def __init__(self, items: list[T]):
+class InMemoryDataset(Dataset[DatasetItem]):
+    def __init__(self, items: list[DatasetItem]):
         self.items = items
 
-    def get(self, index: int) -> T | None:
+    def get(self, index: int) -> DatasetItem | None:
         if index >= len(self.items):
             return None
 
@@ -22,7 +22,7 @@ class InMemoryDataset(Dataset, Generic[T]):
     def __repr__(self) -> str:
         return f"InMemoryDataset(items={self.items[:2]}...)"
 
-    def from_dataset(dataset: Dataset[T]) -> "InMemoryDataset[T]":
+    def from_dataset(dataset: Dataset[DatasetItem]) -> "InMemoryDataset[DatasetItem]":
         items = [item for item in dataset]
         return InMemoryDataset(items)
 
