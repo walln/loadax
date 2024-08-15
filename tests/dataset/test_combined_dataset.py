@@ -1,5 +1,3 @@
-import pytest
-from loadax.dataset.protocol import Dataset
 from loadax.dataset.in_memory import InMemoryDataset
 from loadax.dataset.combined import CombinedDataset
 
