@@ -8,7 +8,7 @@ class PartialDataset(Dataset[T]):
     def __init__(self, dataset: Dataset[T], start_index: int, end_index: int):
         self.dataset = dataset
         self.start_index = start_index
-        self.end_index = end_index
+        self.end_index = min(end_index, len(dataset))
 
     @staticmethod
     def split(dataset: Dataset, num_parts: int) -> list[Dataset[T]]:
@@ -27,9 +27,11 @@ class PartialDataset(Dataset[T]):
         return datasets
 
     def get(self, index: int) -> T | None:
+        if index < 0:
+            index += len(self)
         if index < 0 or index >= len(self):
             return None
         return self.dataset.get(index + self.start_index)
 
     def __len__(self) -> int:
-        return min(self.end_index - self.start_index, len(self.dataset))
+        return max(0, self.end_index - self.start_index)
