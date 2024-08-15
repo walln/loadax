@@ -4,7 +4,7 @@ from loadax.dataloader import NaiveDataLoader, MultiProcessingDataLoader
 from loadax.dataset import Dataset
 
 
-class DataLoaderBuilder:
+class DataLoader:
     strategy: BatchStrategy | None = None
     num_workers: int | None = None
     prefetch_factor: int | None = 2

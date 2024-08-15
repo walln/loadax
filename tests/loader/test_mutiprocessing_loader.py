@@ -1,4 +1,4 @@
-from loadax.loader_builder import DataLoaderBuilder
+from loadax.dataloader import DataLoader
 from loadax.dataset import InMemoryDataset
 from loadax.batcher import Batcher
 import time
@@ -7,7 +7,7 @@ import time
 def test_multiprocessing_dataloader():
     dataset = InMemoryDataset([1, 2, 3, 4, 5])
     batcher = Batcher(lambda x: x)
-    builder = DataLoaderBuilder(batcher).batch_size(2).workers(2).pretech(2)
+    builder = DataLoader(batcher).batch_size(2).workers(2).pretech(2)
     dataloader = builder.build(dataset)
 
     result = []
@@ -20,7 +20,7 @@ def test_multiprocessing_dataloader():
 def test_multiprocessing_dataloader_batch_size():
     dataset = InMemoryDataset(list(range(10)))
     batcher = Batcher(lambda x: x)
-    builder = DataLoaderBuilder(batcher).batch_size(3).workers(2).pretech(2)
+    builder = DataLoader(batcher).batch_size(3).workers(2).pretech(2)
     dataloader = builder.build(dataset)
 
     batches = list(dataloader)
@@ -35,7 +35,7 @@ def test_multiprocessing_dataloader_batch_size():
 def test_multiprocessing_dataloader_large_dataset():
     dataset = InMemoryDataset(list(range(100)))
     batcher = Batcher(lambda x: x)
-    builder = DataLoaderBuilder(batcher).batch_size(10).workers(4).pretech(2)
+    builder = DataLoader(batcher).batch_size(10).workers(4).pretech(2)
     dataloader = builder.build(dataset)
 
     result = []
@@ -48,7 +48,7 @@ def test_multiprocessing_dataloader_large_dataset():
 def test_multiprocessing_dataloader_empty_dataset():
     dataset = InMemoryDataset([])
     batcher = Batcher(lambda x: x)
-    builder = DataLoaderBuilder(batcher).batch_size(2).workers(2).pretech(2)
+    builder = DataLoader(batcher).batch_size(2).workers(2).pretech(2)
     dataloader = builder.build(dataset)
 
     result = list(dataloader)
@@ -59,7 +59,7 @@ def test_multiprocessing_dataloader_empty_dataset():
 def test_multiprocessing_dataloader_single_element():
     dataset = InMemoryDataset([1])
     batcher = Batcher(lambda x: x)
-    builder = DataLoaderBuilder(batcher).batch_size(2).workers(2).pretech(2)
+    builder = DataLoader(batcher).batch_size(2).workers(2).pretech(2)
     dataloader = builder.build(dataset)
 
     result = list(dataloader)
@@ -70,7 +70,7 @@ def test_multiprocessing_dataloader_single_element():
 def test_multiprocessing_dataloader_non_divisible_batch_size():
     dataset = InMemoryDataset(list(range(7)))
     batcher = Batcher(lambda x: x)
-    builder = DataLoaderBuilder(batcher).batch_size(3).workers(2).pretech(2)
+    builder = DataLoader(batcher).batch_size(3).workers(2).pretech(2)
     dataloader = builder.build(dataset)
 
     batches = list(dataloader)
@@ -84,7 +84,7 @@ def test_multiprocessing_dataloader_non_divisible_batch_size():
 def test_multiprocessing_dataloader_multiple_workers_large_dataset():
     dataset = InMemoryDataset(list(range(1000)))
     batcher = Batcher(lambda x: x)
-    builder = DataLoaderBuilder(batcher).batch_size(100).workers(10).pretech(2)
+    builder = DataLoader(batcher).batch_size(100).workers(10).pretech(2)
     dataloader = builder.build(dataset)
 
     result = []
@@ -97,7 +97,7 @@ def test_multiprocessing_dataloader_multiple_workers_large_dataset():
 def test_multiprocessing_dataloader_worker_handling():
     dataset = InMemoryDataset(list(range(20)))
     batcher = Batcher(lambda x: x)
-    builder = DataLoaderBuilder(batcher).batch_size(4).workers(3).pretech(2)
+    builder = DataLoader(batcher).batch_size(4).workers(3).pretech(2)
     dataloader = builder.build(dataset)
 
     batches = list(dataloader)
@@ -113,7 +113,7 @@ def test_multiprocessing_dataloader_worker_handling():
 def test_multiprocessing_dataloader_different_prefetch_factors():
     dataset = InMemoryDataset(list(range(20)))
     batcher = Batcher(lambda x: x)
-    builder = DataLoaderBuilder(batcher).batch_size(5).workers(2).pretech(4)
+    builder = DataLoader(batcher).batch_size(5).workers(2).pretech(4)
     dataloader = builder.build(dataset)
 
     batches = list(dataloader)
@@ -128,7 +128,7 @@ def test_multiprocessing_dataloader_different_prefetch_factors():
 def test_multiprocessing_dataloader_varying_data_types():
     dataset = InMemoryDataset([1, "a", 3.0, True, None])
     batcher = Batcher(lambda x: x)
-    builder = DataLoaderBuilder(batcher).batch_size(2).workers(2).pretech(2)
+    builder = DataLoader(batcher).batch_size(2).workers(2).pretech(2)
     dataloader = builder.build(dataset)
 
     batches = list(dataloader)
@@ -142,7 +142,7 @@ def test_multiprocessing_dataloader_varying_data_types():
 def test_multiprocessing_dataloader_large_number_of_small_batches():
     dataset = InMemoryDataset(list(range(50)))
     batcher = Batcher(lambda x: x)
-    builder = DataLoaderBuilder(batcher).batch_size(1).workers(5).pretech(2)
+    builder = DataLoader(batcher).batch_size(1).workers(5).pretech(2)
     dataloader = builder.build(dataset)
 
     result = []
@@ -155,7 +155,7 @@ def test_multiprocessing_dataloader_large_number_of_small_batches():
 def test_multiprocessing_dataloader_odd_elements_and_batch_size():
     dataset = InMemoryDataset(list(range(15)))
     batcher = Batcher(lambda x: x)
-    builder = DataLoaderBuilder(batcher).batch_size(4).workers(2).pretech(2)
+    builder = DataLoader(batcher).batch_size(4).workers(2).pretech(2)
     dataloader = builder.build(dataset)
 
     batches = list(dataloader)
@@ -176,7 +176,7 @@ class SlowDataset(InMemoryDataset):
 def test_multiprocessing_dataloader_slow_dataset():
     dataset = SlowDataset(list(range(10)))
     batcher = Batcher(lambda x: x)
-    builder = DataLoaderBuilder(batcher).batch_size(2).workers(2).pretech(2)
+    builder = DataLoader(batcher).batch_size(2).workers(2).pretech(2)
     dataloader = builder.build(dataset)
 
     result = []
