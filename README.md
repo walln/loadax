@@ -100,7 +100,7 @@ def slow_fn(x):
     time.sleep(0.1)
     return x * 2
 
-dataset = MappedDataset(RangeDataset(0, 10), slow_fn)
+dataset = MappedDataset(RangeDataset(0, 20), slow_fn)
 batcher = Batcher(lambda x: x)
 loader = DataLoader(batcher).batch_size(2).workers(2).build(dataset)
 
