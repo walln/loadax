@@ -1,0 +1,21 @@
+repos:
+  - repo: local
+    hooks:
+      - id: lint
+        name: lint
+        entry: rye lint
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: format
+        name: format
+        entry: rye format --check
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: commit-msg
+        name: conventional-commit-messages
+        language: pygrep
+        entry: "^(chore|test|feat|fix|build|docs|refactor)!?:.*$"
+        args: [--multiline, --negate] # fails if the entry is NOT matched
+        stages: [commit-msg]
