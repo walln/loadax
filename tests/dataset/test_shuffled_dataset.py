@@ -49,7 +49,7 @@ def test_shuffled_dataset_complex_types():
 
     assert len(shuffled_dataset) == 3
     samples = [shuffled_dataset.get(i) for i in range(3)]
-    assert sorted(samples, key=lambda x: list(x.values())[0]) == [
+    assert sorted(samples, key=lambda x: next(iter(x.values()))) == [
         {"a": 1},
         {"b": 2},
         {"c": 3},

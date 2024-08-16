@@ -1,7 +1,8 @@
+import time
+
+from loadax.batcher import Batcher
 from loadax.dataloader import DataLoader
 from loadax.dataset import InMemoryDataset
-from loadax.batcher import Batcher
-import time
 
 
 def test_multiprocessing_dataloader():
@@ -168,7 +169,10 @@ def test_multiprocessing_dataloader_odd_elements_and_batch_size():
 
 
 class SlowDataset(InMemoryDataset):
+    """Slow dataset that simulates slow data retrieval."""
+
     def get(self, index: int):
+        """Get the item at the given index."""
         time.sleep(0.01)  # Simulate slow data retrieval
         return super().get(index)
 

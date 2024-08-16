@@ -58,8 +58,8 @@ def test_in_memory_dataset_repr():
 
 
 def test_in_memory_dataset_modifying_retrieved_data():
-    # In-place modification of retrieved data, to ensure there are no extraneous copies of the
-    # underlying data
+    # In-place modification of retrieved data, to ensure there are no
+    # extraneous copies of theunderlying data
     dataset = InMemoryDataset([{"a": 1}, {"b": 2}])
     item = dataset.get(0)
     item["a"] = 99

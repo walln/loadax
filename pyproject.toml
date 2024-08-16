@@ -3,7 +3,7 @@ name = "loadax"
 version = "0.1.0"
 description = "Add your description here"
 authors = [
-    { name = "Nick Wall", email = "46641379+walln@users.noreply.github.com" }
+    { name = "Nick Wall", email = "46641379+walln@users.noreply.github.com" },
 ]
 dependencies = []
 readme = "README.md"
@@ -15,12 +15,40 @@ build-backend = "hatchling.build"
 
 [tool.rye]
 managed = true
-dev-dependencies = [
-    "pytest>=8.3.2",
-]
+dev-dependencies = ["pytest>=8.3.2", "ruff>=0.4.10"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/loadax"]
+
+[tool.ruff]
+include = ["src/**", "tests/**"]
+
+
+[tool.ruff.lint]
+pydocstyle.convention = "google"
+select = [
+    "E",      # pycodestyle
+    "W",      # pycodestyle
+    "F",      # Pyflakes
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "D",      # pydocstyle
+    "I",      # isort
+    "SIM",    # flake8-simplify
+    "TCH",    # flake8-type-checking
+    "TID",    # flake8-tidy-imports
+    "UP",     # pyupgrade
+    "PT",     # flake8-pytest-style
+    "RUF",    # Ruff-specific rules
+    "FBT001", # flake8-boolean-trap
+]
+
+ignore = ["F722"]
+per-file-ignores = { "tests/**/*.py" = ["D100", "D103"] }
+
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]

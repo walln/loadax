@@ -24,7 +24,7 @@ def test_range_dataset_negative():
 
 
 def test_range_dataset_reverse_raises():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="start must be less than end"):
         RangeDataset(10, 0)
 
 
@@ -69,8 +69,8 @@ def test_range_dataset_step_one():
 
 
 def test_range_dataset_invalid_step():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="step must be greater than 0"):
         RangeDataset(0, 10, step=0)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="step must be greater than 0"):
         RangeDataset(0, 10, step=-1)
