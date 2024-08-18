@@ -23,7 +23,7 @@ class BatchStrategy(Protocol, Generic[DatasetItem]):
         This protocol defines the interface for determining how much data goes into a
         batchas it is loaded from the dataset.
         """
-        raise NotImplementedError
+        ...
 
     def add(self, item: DatasetItem):
         """Add an item to the batch.
@@ -31,9 +31,9 @@ class BatchStrategy(Protocol, Generic[DatasetItem]):
         Args:
             item: The item to add to the batch.
         """
-        raise NotImplementedError
+        ...
 
-    def batch(self, force: bool) -> list[DatasetItem] | None:  # noqa: FBT001
+    def batch(self, *, force: bool) -> list[DatasetItem] | None:
         """Get the batch.
 
         This method method returns the batch if it is full, or None if the batch is not
@@ -45,7 +45,7 @@ class BatchStrategy(Protocol, Generic[DatasetItem]):
         Returns:
             The batch, or None if the batch is not full.
         """
-        raise NotImplementedError
+        ...
 
     def clone(self) -> "BatchStrategy[DatasetItem]":
         """Clone the batch strategy.
@@ -56,7 +56,7 @@ class BatchStrategy(Protocol, Generic[DatasetItem]):
         Returns:
             A clone of the batch strategy.
         """
-        raise NotImplementedError
+        ...
 
 
 class FixedBatchStrategy(BatchStrategy[DatasetItem]):
@@ -71,7 +71,7 @@ class FixedBatchStrategy(BatchStrategy[DatasetItem]):
         items: The items in the batch.
     """
 
-    def __init__(self, batch_size):
+    def __init__(self, batch_size: int):
         """A batch strategy that batches items into a fixed size batch.
 
         This batch strategy batches items into a fixed size batch. It will always return
@@ -92,7 +92,7 @@ class FixedBatchStrategy(BatchStrategy[DatasetItem]):
         """
         self.items.append(item)
 
-    def batch(self, force: bool) -> list[DatasetItem] | None:  # noqa: FBT001
+    def batch(self, *, force: bool) -> list[DatasetItem] | None:
         """Get the batch.
 
         This method method returns the batch if it is full, or None if the batch is not
@@ -112,6 +112,7 @@ class FixedBatchStrategy(BatchStrategy[DatasetItem]):
             items = self.items
             self.items = []
             return items
+        return None
 
     def clone(self) -> "FixedBatchStrategy[DatasetItem]":
         """Clone the batch strategy.
@@ -122,6 +123,8 @@ class FixedBatchStrategy(BatchStrategy[DatasetItem]):
         Returns:
             A clone of the batch strategy.
         """
-        new_strategy = FixedBatchStrategy(self.batch_size)
+        new_strategy: FixedBatchStrategy[DatasetItem] = FixedBatchStrategy(
+            self.batch_size
+        )
         new_strategy.items = self.items.copy()
         return new_strategy

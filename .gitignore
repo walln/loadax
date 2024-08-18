@@ -9,4 +9,9 @@ wheels/
 # venv
 .venv
 
+# cache files
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
 TODO.md

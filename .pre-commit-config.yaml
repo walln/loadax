@@ -19,3 +19,9 @@ repos:
         entry: "^(chore|test|feat|fix|build|docs|refactor)!?:.*$"
         args: [--multiline, --negate] # fails if the entry is NOT matched
         stages: [commit-msg]
+      - id: typecheck
+        name: typecheck
+        entry: rye run mypy src/loadax/
+        language: system
+        types: [python]
+        pass_filenames: false

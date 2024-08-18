@@ -1,13 +1,13 @@
 """Batcher is a protocol for batching data."""
 
 from collections.abc import Callable
-from typing import Generic, Protocol, TypeVar
+from typing import Generic, TypeVar
 
 DatasetItem = TypeVar("DatasetItem")
 Batch = TypeVar("Batch")
 
 
-class Batcher(Protocol, Generic[DatasetItem, Batch]):
+class Batcher(Generic[DatasetItem, Batch]):
     """Batcher is a protocol for batching data.
 
     A batcher is responsible for taking a list of items and returning a batch. The

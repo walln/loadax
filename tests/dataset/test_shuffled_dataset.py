@@ -1,6 +1,5 @@
 import pytest
-from loadax.dataset.in_memory import InMemoryDataset
-from loadax.dataset.transform import ShuffledDataset
+from loadax import InMemoryDataset, ShuffledDataset
 
 
 def test_shuffled_dataset_basic():

@@ -5,12 +5,13 @@ basic functionality needed for a random access dataset. This includes the abilit
 to get an item at a given index, as well as the ability to iterate over the dataset.
 """
 
-from typing import Generic, Protocol, TypeVar
+from abc import ABC, abstractmethod
+from typing import Generic, TypeVar
 
-DatasetItem = TypeVar("DatasetItem")
+DatasetItem = TypeVar("DatasetItem", covariant=True)
 
 
-class DatasetIterator(Protocol, Generic[DatasetItem]):
+class DatasetIterator(ABC, Generic[DatasetItem]):
     """DatasetIterator is a protocol for iterating over a dataset.
 
     A dataset iterator is responsible for iterating over a dataset. This includes
@@ -65,7 +66,7 @@ class DatasetIterator(Protocol, Generic[DatasetItem]):
         return item
 
 
-class Dataset(Protocol, Generic[DatasetItem]):
+class Dataset(ABC, Generic[DatasetItem]):
     """Dataset is a protocol for datasets.
 
     Any loadax dataset must implement the Dataset protocol. This protocol defines the
@@ -98,6 +99,7 @@ class Dataset(Protocol, Generic[DatasetItem]):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def get(self, index: int) -> DatasetItem | None:
         """Get the item at the given index.
 
@@ -149,6 +151,7 @@ class Dataset(Protocol, Generic[DatasetItem]):
         """
         return DatasetIterator(self)
 
+    @abstractmethod
     def __len__(self) -> int:
         """Get the length of the dataset.
 

@@ -4,11 +4,11 @@ from typing import Generic, Protocol, TypeVar
 
 from loadax.dataloader.progress import Progress
 
-DatasetItem = TypeVar("DatasetItem")
-Batch = TypeVar("Batch")
+DatasetItem = TypeVar("DatasetItem", covariant=True)
+Batch = TypeVar("Batch", covariant=True)
 
 
-class DataLoaderIteratorProtocol(Protocol, Generic[Batch]):
+class DataLoaderIteratorProtocol(Protocol[Batch]):
     """The iterator protocol for a dataloader.
 
     This protocol defines the interface for iterating over a dataloader. It is
@@ -28,7 +28,7 @@ class DataLoaderIteratorProtocol(Protocol, Generic[Batch]):
         Returns:
             The progress of the dataloader.
         """
-        raise NotImplementedError
+        ...
 
     def __next__(self) -> Batch:
         """Get the next batch.
@@ -39,7 +39,7 @@ class DataLoaderIteratorProtocol(Protocol, Generic[Batch]):
         Returns:
             The next batch of data.
         """
-        raise NotImplementedError
+        ...
 
 
 class DataLoaderProtocol(Protocol, Generic[DatasetItem, Batch]):

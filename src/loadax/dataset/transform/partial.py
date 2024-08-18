@@ -1,5 +1,6 @@
 """Partial dataset that allows accessing a subset of the dataset."""
 
+from collections.abc import Sequence
 from typing import TypeVar
 
 from loadax.dataset import Dataset
@@ -31,7 +32,7 @@ class PartialDataset(Dataset[DatasetItem]):
         self.end_index = min(end_index, len(dataset))
 
     @staticmethod
-    def split(dataset: Dataset, num_parts: int) -> list[Dataset[DatasetItem]]:
+    def split(dataset: Dataset, num_parts: int) -> Sequence[Dataset[DatasetItem]]:
         """Split a dataset into multiple parts.
 
         This method splits a dataset into multiple parts of equal size. The

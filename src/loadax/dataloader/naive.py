@@ -52,11 +52,11 @@ class NaiveDataLoaderIterator(DataLoaderIteratorProtocol[Batch]):
             self.current_index += 1
             self.dataloader.strategy.add(item)
 
-            items = self.dataloader.strategy.batch(False)
+            items = self.dataloader.strategy.batch(force=False)
             if items is not None:
                 return self.dataloader.batcher.batch(items)
 
-        items = self.dataloader.strategy.batch(True)
+        items = self.dataloader.strategy.batch(force=True)
         if items is not None:
             return self.dataloader.batcher.batch(items)
 
@@ -83,9 +83,7 @@ class NaiveDataLoaderIterator(DataLoaderIteratorProtocol[Batch]):
         Returns:
             The progress of the dataloader.
         """
-        return Progress(
-            self.current_index, len(self.dataloader.dataset.get(self.current_index))
-        )
+        return Progress(self.current_index, len(self.dataloader.dataset))
 
 
 class NaiveDataLoader(

@@ -178,12 +178,14 @@ class DataLoader:
         strategy = self.strategy if self.strategy else FixedBatchStrategy(1)
 
         if self.num_workers or self.prefetch_factor:
+            # TODO: Log warning if num_workers is greater than 1 and prefetch_factor is
+            # not set to a value greater than 1, and vice versa.
             return MultiProcessingDataLoader(
                 dataset=dataset,
                 strategy=strategy,
                 batcher=self.batcher,
                 num_workers=self.num_workers or 1,
-                prefetch_factor=self.prefetch_factor,
+                prefetch_factor=self.prefetch_factor or 1,
             )
 
         return NaiveDataLoader(dataset=dataset, batcher=self.batcher, strategy=strategy)

@@ -1,8 +1,6 @@
 import time
 
-from loadax.batcher import Batcher
-from loadax.dataloader import DataLoader
-from loadax.dataset import InMemoryDataset
+from loadax import Batcher, DataLoader, InMemoryDataset
 
 
 def test_multiprocessing_dataloader():

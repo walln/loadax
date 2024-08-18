@@ -1,5 +1,5 @@
-from loadax.dataset.in_memory import InMemoryDataset
-from loadax.dataset.transform import (
+from loadax import (
+    InMemoryDataset,
     SampledDatasetWithoutReplacement,
     SampledDatasetWithReplacement,
 )

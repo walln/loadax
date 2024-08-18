@@ -1,4 +1,4 @@
-from loadax.dataset.in_memory import InMemoryDataset
+from loadax import InMemoryDataset
 
 
 def test_in_memory_dataset_basic():

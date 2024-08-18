@@ -64,7 +64,7 @@ class SampledDatasetWithoutReplacement(Dataset[DatasetItem]):
         """
         self.dataset = dataset
         self.sample_size = sample_size
-        self.indices = []
+        self.indices: list[int] = []
 
     def __len__(self):
         """Get the length of the dataset.

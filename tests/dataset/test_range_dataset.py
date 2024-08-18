@@ -1,5 +1,5 @@
 import pytest
-from loadax.dataset.range import RangeDataset
+from loadax import RangeDataset
 
 
 def test_range_dataset():

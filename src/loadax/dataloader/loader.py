@@ -2,6 +2,7 @@
 
 import itertools
 import multiprocessing
+import multiprocessing.queues
 import queue
 from typing import TypeVar
 
@@ -64,14 +65,14 @@ class MultiProcessingDataLoaderIterator(DataLoaderIteratorProtocol[Batch]):
         self.dataloader = dataloader
 
         self.index_queues = []
-        self.data_queue = multiprocessing.Queue()
+        self.data_queue: multiprocessing.queues.Queue = multiprocessing.Queue()
         self.workers: list[multiprocessing.Process] = []
         self.worker_cycle = itertools.cycle(range(self.dataloader.num_workers))
-        self.cache = {}
+        self.cache: dict[int, DatasetItem] = {}
         self.prefetch_index = 0
 
         for _ in range(self.dataloader.num_workers):
-            index_queue = multiprocessing.Queue()
+            index_queue: multiprocessing.queues.Queue = multiprocessing.Queue()
             worker = multiprocessing.Process(
                 target=worker_fn,
                 args=(self.dataloader.dataset, index_queue, self.data_queue),
@@ -144,12 +145,12 @@ class MultiProcessingDataLoaderIterator(DataLoaderIteratorProtocol[Batch]):
             self.current_index += 1
             self.dataloader.strategy.add(item)
 
-            items = self.dataloader.strategy.batch(False)
+            items = self.dataloader.strategy.batch(force=False)
             if items is not None:
                 return self.dataloader.batcher.batch(items)
 
         # Check for remaining items if the batch is not full
-        items = self.dataloader.strategy.batch(True)
+        items = self.dataloader.strategy.batch(force=True)
         if items is not None:
             return self.dataloader.batcher.batch(items)
 
@@ -226,7 +227,7 @@ class MultiProcessingDataLoaderIterator(DataLoaderIteratorProtocol[Batch]):
         Returns:
             Progress: The progress of the dataloader.
         """
-        return Progress(self.current_index, len(self.dataset))
+        return Progress(self.current_index, len(self.dataloader.dataset))
 
 
 class MultiProcessingDataLoader(NaiveDataLoader[DatasetItem, Batch]):

@@ -1,6 +1,5 @@
 import pytest
-from loadax.dataset.in_memory import InMemoryDataset
-from loadax.dataset.transform.partial import PartialDataset
+from loadax import InMemoryDataset, PartialDataset
 
 
 def test_partial_dataset_basic():

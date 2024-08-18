@@ -1,6 +1,4 @@
-from loadax.batcher import Batcher
-from loadax.dataloader import DataLoader
-from loadax.dataset.in_memory import InMemoryDataset
+from loadax import Batcher, DataLoader, InMemoryDataset
 
 
 def test_single_batch_loader():
