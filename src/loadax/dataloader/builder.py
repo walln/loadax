@@ -1,8 +1,8 @@
 """The core primitive for creating dataloaders in loadax."""
 
 from loadax.batcher import Batcher
-from loadax.dataloader.loader import MultiProcessingDataLoader
 from loadax.dataloader.naive import NaiveDataLoader
+from loadax.dataloader.single_host import MultiProcessingDataLoader
 from loadax.dataset import Dataset
 from loadax.strategy import BatchStrategy, FixedBatchStrategy
 

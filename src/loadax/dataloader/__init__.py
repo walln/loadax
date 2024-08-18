@@ -13,7 +13,7 @@ by importing one of the following:
 """
 
 from loadax.dataloader.builder import DataLoader as DataLoader
-from loadax.dataloader.loader import (
+from loadax.dataloader.naive import NaiveDataLoader as NaiveDataLoader
+from loadax.dataloader.single_host import (
     MultiProcessingDataLoader as MultiProcessingDataLoader,
 )
-from loadax.dataloader.naive import NaiveDataLoader as NaiveDataLoader
