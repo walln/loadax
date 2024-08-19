@@ -11,7 +11,9 @@ DatasetItem = TypeVar("DatasetItem")
 class PartialDataset(Dataset[DatasetItem]):
     """Create a partial subset of an existing dataset."""
 
-    def __init__(self, dataset: Dataset[DatasetItem], start_index: int, end_index: int):
+    def __init__(
+        self, dataset: Dataset[DatasetItem], start_index: int, end_index: int
+    ) -> None:
         """Create a partial subset of an existing dataset.
 
         This dataset allows accessing a subset of the original dataset. The
@@ -32,7 +34,9 @@ class PartialDataset(Dataset[DatasetItem]):
         self.end_index = min(end_index, len(dataset))
 
     @staticmethod
-    def split(dataset: Dataset, num_parts: int) -> Sequence[Dataset[DatasetItem]]:
+    def split(
+        dataset: Dataset[DatasetItem], num_parts: int
+    ) -> Sequence[Dataset[DatasetItem]]:
         """Split a dataset into multiple parts.
 
         This method splits a dataset into multiple parts of equal size. The

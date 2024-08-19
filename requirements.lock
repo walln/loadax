@@ -8,9 +8,21 @@
 #   with-sources: false
 
 -e file:.
-mypy==1.11.1
+jax==0.4.31
     # via loadax
-mypy-extensions==1.0.0
-    # via mypy
-typing-extensions==4.12.2
-    # via mypy
+jaxlib==0.4.31
+    # via jax
+ml-dtypes==0.4.0
+    # via jax
+    # via jaxlib
+numpy==2.0.1
+    # via jax
+    # via jaxlib
+    # via ml-dtypes
+    # via opt-einsum
+    # via scipy
+opt-einsum==3.3.0
+    # via jax
+scipy==1.14.0
+    # via jax
+    # via jaxlib

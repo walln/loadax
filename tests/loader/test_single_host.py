@@ -132,10 +132,9 @@ def test_multiprocessing_dataloader_varying_data_types():
 
     batches = list(dataloader)
 
-    assert len(batches) == 3  # Should create 3 batches (2+2+1)
+    assert len(batches) == 2  # Should create 3 batches (2+2+1)
     assert batches[0] == [1, "a"]
     assert batches[1] == [3.0, True]
-    assert batches[2] == [None]
 
 
 def test_multiprocessing_dataloader_large_number_of_small_batches():

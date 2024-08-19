@@ -12,7 +12,7 @@ DatasetItem = TypeVar("DatasetItem")
 Batch = TypeVar("Batch")
 
 
-class NaiveDataLoaderIterator(DataLoaderIteratorProtocol[Batch]):
+class NaiveDataLoaderIterator(DataLoaderIteratorProtocol[DatasetItem, Batch]):
     """An iterator over a naive dataloader.
 
     This iterator is stateful and blocks the calling thread until the next batch is
@@ -62,7 +62,7 @@ class NaiveDataLoaderIterator(DataLoaderIteratorProtocol[Batch]):
 
         raise StopIteration
 
-    def __iter__(self):
+    def __iter__(self) -> "NaiveDataLoaderIterator[DatasetItem, Batch]":
         """Get an iterator over the dataloader.
 
         This method returns an iterator over the dataloader. The iterator is stateful
@@ -158,7 +158,7 @@ class NaiveDataLoader(
         """
         return self.num_batches()
 
-    def __iter__(self):
+    def __iter__(self) -> DataLoaderIteratorProtocol[DatasetItem, Batch]:
         """Get an iterator over the dataloader.
 
         This method returns an iterator over the dataloader. The iterator is stateful

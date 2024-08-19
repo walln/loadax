@@ -1,5 +1,6 @@
 """Batching strategies for fulling batches with loaded data."""
 
+from collections import deque
 from typing import Generic, Protocol, TypeVar
 
 DatasetItem = TypeVar("DatasetItem")
@@ -17,15 +18,7 @@ class BatchStrategy(Protocol, Generic[DatasetItem]):
 
     batch_size: int
 
-    def __init__(self):
-        """The method for determining how much data goes into a batch.
-
-        This protocol defines the interface for determining how much data goes into a
-        batchas it is loaded from the dataset.
-        """
-        ...
-
-    def add(self, item: DatasetItem):
+    def add(self, item: DatasetItem) -> None:
         """Add an item to the batch.
 
         Args:
@@ -82,9 +75,9 @@ class FixedBatchStrategy(BatchStrategy[DatasetItem]):
             batch_size: The size of the batch.
         """
         self.batch_size = batch_size
-        self.items: list[DatasetItem] = []
+        self.items: deque[DatasetItem] = deque()
 
-    def add(self, item: DatasetItem):
+    def add(self, item: DatasetItem) -> None:
         """Add an item to the batch.
 
         Args:
@@ -105,13 +98,9 @@ class FixedBatchStrategy(BatchStrategy[DatasetItem]):
             The batch, or None if the batch is not full.
         """
         if len(self.items) >= self.batch_size:
-            items = self.items[: self.batch_size]
-            self.items = self.items[self.batch_size :]
-            return items
+            return [self.items.popleft() for _ in range(self.batch_size)]
         elif force and self.items:
-            items = self.items
-            self.items = []
-            return items
+            return list(self.items)
         return None
 
     def clone(self) -> "FixedBatchStrategy[DatasetItem]":

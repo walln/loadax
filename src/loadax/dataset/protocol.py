@@ -82,7 +82,7 @@ class Dataset(ABC, Generic[DatasetItem]):
         current (int): The current index of the iterator.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Dataset is a protocol for datasets.
 
         Any loadax dataset must implement the Dataset protocol. This protocol defines

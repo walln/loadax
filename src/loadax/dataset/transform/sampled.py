@@ -66,7 +66,7 @@ class SampledDatasetWithoutReplacement(Dataset[DatasetItem]):
         self.sample_size = sample_size
         self.indices: list[int] = []
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Get the length of the dataset.
 
         In the case of a sampled dataset, the length is the sample size.
@@ -157,7 +157,7 @@ class SampledDatasetWithReplacement(Dataset[DatasetItem]):
         self.dataset = dataset
         self.sample_size = sample_size
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Get the length of the dataset.
 
         In the case of a sampled dataset, the length is the sample size.

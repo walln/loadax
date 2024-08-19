@@ -54,7 +54,7 @@ class ShuffledDataset(Dataset[DatasetItem]):
         self.indices = list(range(len(dataset)))
         random.shuffle(self.indices)
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Get the length of the dataset.
 
         In the case of a shuffled dataset, the length is the length of the underlying

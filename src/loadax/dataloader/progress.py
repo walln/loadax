@@ -18,7 +18,7 @@ class Progress:
     items_processed: int
     items_total: int
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Get a string representation of the progress.
 
         Returns:

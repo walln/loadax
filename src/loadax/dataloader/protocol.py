@@ -8,7 +8,7 @@ DatasetItem = TypeVar("DatasetItem", covariant=True)
 Batch = TypeVar("Batch", covariant=True)
 
 
-class DataLoaderIteratorProtocol(Protocol[Batch]):
+class DataLoaderIteratorProtocol(Protocol[DatasetItem, Batch]):
     """The iterator protocol for a dataloader.
 
     This protocol defines the interface for iterating over a dataloader. It is
@@ -53,7 +53,7 @@ class DataLoaderProtocol(Protocol, Generic[DatasetItem, Batch]):
 
     """
 
-    def __iter__(self) -> DataLoaderIteratorProtocol[Batch]:
+    def __iter__(self) -> DataLoaderIteratorProtocol[DatasetItem, Batch]:
         """Get an iterator over the dataset.
 
         This method returns an iterator over the dataset. The iterator is stateful and
