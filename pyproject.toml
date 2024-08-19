@@ -1,10 +1,11 @@
 [project]
 name = "loadax"
 version = "0.1.0"
-description = "Add your description here"
+description = "Dataloading for Jax"
 authors = [
     { name = "Nick Wall", email = "46641379+walln@users.noreply.github.com" },
 ]
+license = { file = "LICENSE" }
 dependencies = ["jax>=0.4.15"]
 readme = "README.md"
 requires-python = ">= 3.8"
