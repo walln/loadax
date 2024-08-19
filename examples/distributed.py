@@ -4,28 +4,14 @@ import jax
 import jax.numpy as jnp
 from jax.sharding import Mesh, NamedSharding, PartitionSpec
 from loadax.dataloader.distributed import DistributedDataLoader, JaxShardingStrategy
+from loadax import InMemoryDataset, Batcher
 from loadax.strategy import FixedBatchStrategy
 
-# Define a simple dataset and batcher for testing
-class SimpleDataset:
-    def __init__(self, data):
-        self.data = data
-    
-    def __len__(self):
-        return len(self.data)
-    
-    def get(self, index):
-        return self.data[index]
-
-class SimpleBatcher:
-    def batch(self, items):
-        print(f"Batching items: {items}")
-        return jnp.stack(items)
 
 def test_distributed_dataloader_on_logical_devices():
     # Simulate a simple dataset with 10 items
-    dataset = SimpleDataset(data=[jnp.array([i]) for i in range(10)])
-    batcher = SimpleBatcher()
+    dataset = InMemoryDataset(data=[jnp.array([i]) for i in range(10)])
+    batcher = Batcher(lambda items: jnp.stack(items))
     batch_strategy = FixedBatchStrategy(batch_size=2)
 
     # Create logical devices by slicing the actual physical device(s)
