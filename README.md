@@ -158,7 +158,9 @@ def train_step(model, optimizer, batch):
     return loss
 
 for local_batch in dataloader:
-    # Distribute the batch across the local devices
+    # Distribute the host-local-batch to create a sharded-global-batch
+    # jax will not need to do any data movement since loadax can ensure the sharding is correct
+    # for each host, unless you specify otherwise this also does not require contiguous device layout
     global_batch = dataloader.sharding_strategy.distribute_global_batch(local_batch)
 
     loss = train_step(model, optimizer, global_batch)
