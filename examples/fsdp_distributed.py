@@ -100,7 +100,6 @@ def create_model():
 
 @nnx.jit
 def train_step(model: Model, optimizer: nnx.Optimizer, metrics: nnx.MultiMetric, batch: jnp.ndarray):
-    batch = jax.lax.with_sharding_constraint(batch, sharding_strategy.named_sharding('data'))
     def loss_fn(model):
         y_pred = model(batch)
         return jnp.mean((y_pred - batch) ** 2)

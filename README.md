@@ -120,16 +120,19 @@ from loadax import DataLoader, InMemoryDataset, Batcher
 from jax.sharding import Mesh, PartitionSpec, NamedSharding
 import jax.numpy as jnp
 
+# Standard jax distributed setup
+...
+
 # Create a mesh across all the jax devices
-mesh = Mesh(jax.devices(), ("data", "model"))
+# You can customize the number of data shards or let it default to the number of hosts in the cluster 
+# (model_shards is for model parallelism, you can ignore this if not needed)
+devices = np.array(jax.devices()).reshape((num_data_shards, num_model_shards))
+mesh = Mesh(devices, ('data', 'model'))
 
-# Create a partition spec for the mesh
-partition_spec = PartitionSpec("data", "model")
+dataset_size = 128
+batch_size = 8
 
-dataset_size = 100
-batch_size = 10
-
-# Create dataloader for a jax process
+# Create a host-specific (jax process) dataloader
 dataset = InMemoryDataset(list(range(dataset_size)))
 batcher = Batcher(lambda x: jnp.stack(x))
 
@@ -138,30 +141,27 @@ dataloader = (
         .batch_size(batch_size)
         .workers(2)
         .prefetch(2)
-        .shard(mesh, partition_spec)
+        .shard(mesh, data_axis_name='data')
         .build(dataset)
     )
 
-# Define a simple model function, you can imagine this is some Flax model or something similar, it may even be sharded itself in some other axis such as model parallelism
+def create_model():
+    # Create your model and shard however you like (see fsdp example for zero style fsdp)
+    ...
+
+model, optimizer = create_model()
 def simple_model(x, params):
     return x * params
 
-params = jnp.array([2.0])
-sharded_params = jax.device_put(params, NamedSharding(mesh, partition_spec))
-
-def compute_loss(batch, predictions):
+def train_step(model, optimizer, batch):
     # Your loss calculation logic
-    return jnp.mean(...)
+    return loss
 
-for batch in dataloader:
+for local_batch in dataloader:
     # Distribute the batch across the local devices
-    local_batch = jax.device_put(jnp.array(batch), NamedSharding(mesh, sharding_spec))
+    global_batch = dataloader.sharding_strategy.distribute_global_batch(local_batch)
 
-    # Apply the model and compute the local loss
-    predictions = jax.jit(simple_model)(local_batch, sharded_params)
-    loss = compute_loss(local_batch, predictions)
-
-    total_loss += jax.lax.pmean(loss, axis_name="model")
+    loss = train_step(model, optimizer, global_batch)
 ```
 
 The sharding primitives that Loadax provides are powerful as they declare the way data is distributed up front. This enables loadax to be deterministic as is decides which elements to load on each shard, and even which elements to load into each specific batch. This guaranteed determinism enables you to focus on other things rather than ensuring that your dataloading is correct and can be reproduced.
