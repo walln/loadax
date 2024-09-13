@@ -2,8 +2,7 @@
 
 from typing import Generic, TypeVar
 
-import jax
-from jax.sharding import Mesh, PartitionSpec
+from jax.sharding import Mesh
 
 from loadax.batcher import Batcher
 from loadax.dataloader.distributed import DistributedDataLoader, JaxShardingStrategy
@@ -136,7 +135,7 @@ class DataLoader(Generic[DatasetItem, Batch]):
         self.num_workers = num_workers
         return self
 
-    def pretech(self, factor: int) -> "DataLoader[DatasetItem, Batch]":
+    def prefetch(self, factor: int) -> "DataLoader[DatasetItem, Batch]":
         """Set the prefetch factor for the dataloader.
 
         This method sets the prefetch factor for the dataloader. The prefetch
@@ -148,7 +147,10 @@ class DataLoader(Generic[DatasetItem, Batch]):
         Example:
             >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
             >>> batcher = Batcher(lambda x: x)
-            >>> dataloader = DataLoader(batcher).batch_size(2).pretech(2).build(dataset)
+            >>> dataloader = DataLoader(batcher)
+            ...                   .batch_size(2)
+            ...                   .prefetch(2)
+            ...                   .build(dataset)
             >>> iterator = iter(dataloader)
             >>> for batch in iterator:
             ...     print(batch)
@@ -165,7 +167,7 @@ class DataLoader(Generic[DatasetItem, Batch]):
     def shard(
         self,
         mesh: Mesh,
-        partition_spec: PartitionSpec,
+        data_axis_name: str | None = None,
         num_shards: int | None = None,
         shard_id: int | None = None,
     ) -> "DataLoader[DatasetItem, Batch]":
@@ -181,7 +183,7 @@ class DataLoader(Generic[DatasetItem, Batch]):
             >>> batcher = Batcher(lambda x: x)
             >>> dataloader = DataLoader(batcher)
                                 .batch_size(2)
-                                .shard(mesh, partition_spec)
+                                .shard(mesh, data_axis_name='data')
                                 .build(dataset)
             >>> iterator = iter(dataloader)
             >>> for batch in iterator:
@@ -189,7 +191,7 @@ class DataLoader(Generic[DatasetItem, Batch]):
 
         Args:
             mesh (Mesh): The mesh to use for sharding.
-            partition_spec (PartitionSpec): The partition spec to use for sharding.
+            data_axis_name (str | None): The name of the data axis to use for sharding.
             num_shards (int): The number of shards to distribute the data across.
                 If not specified, the dataloader will choose automatically using
                 jax.process_count().
@@ -200,7 +202,9 @@ class DataLoader(Generic[DatasetItem, Batch]):
         Returns:
             DataLoader: The dataloader with the mesh and partition spec set.
         """
-        self.sharding_strategy = JaxShardingStrategy(mesh, partition_spec)
+        self.sharding_strategy = JaxShardingStrategy(
+            mesh, data_shard_axis=data_axis_name
+        )
         self.shard_id = shard_id
         self.num_shards = num_shards
         return self
@@ -240,36 +244,13 @@ class DataLoader(Generic[DatasetItem, Batch]):
         """
         strategy = self.strategy if self.strategy else FixedBatchStrategy(1)
 
-        if self.sharding_strategy:
-            return DistributedDataLoader(
-                dataset=dataset,
-                strategy=strategy,
-                batcher=self.batcher,
-                num_workers=self.num_workers or 1,
-                prefetch_factor=self.prefetch_factor or 1,
-                sharding_strategy=self.sharding_strategy,
-                shard_id=self.shard_id or jax.process_index(),
-                num_shards=self.num_shards or jax.process_count(),
-            )
-
-        if self.num_workers or self.prefetch_factor:
-            # TODO: Log warning if num_workers is greater than 1 and prefetch_factor is
-            # not set to a value greater than 1, and vice versa.
-
-            # Create dummy sharding strategy
-            partition_spec = PartitionSpec("dp")  # type: ignore
-            sharding_strategy = JaxShardingStrategy(
-                Mesh(jax.devices(), ("dp",)), partition_spec
-            )
-            return DistributedDataLoader(
-                dataset=dataset,
-                strategy=strategy,
-                batcher=self.batcher,
-                num_workers=self.num_workers or 1,
-                prefetch_factor=self.prefetch_factor or 1,
-                sharding_strategy=sharding_strategy,
-                shard_id=0,
-                num_shards=1,
-            )
-
-        return NaiveDataLoader(dataset=dataset, batcher=self.batcher, strategy=strategy)
+        return DistributedDataLoader(
+            dataset=dataset,
+            strategy=strategy,
+            batcher=self.batcher,
+            num_workers=self.num_workers or 1,
+            prefetch_factor=self.prefetch_factor or 1,
+            sharding_strategy=self.sharding_strategy,
+            shard_id=self.shard_id,
+            num_shards=self.num_shards,
+        )

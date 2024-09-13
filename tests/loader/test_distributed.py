@@ -160,13 +160,12 @@ def create_dataloader(
     dataset = InMemoryDataset(list(range(dataset_size)))
     batcher = Batcher(lambda x: x)
     mesh = Mesh(jax.devices(), ("dp",))
-    partition_spec = PartitionSpec("dp")
 
     return (
         DataLoader(batcher)
         .batch_size(batch_size)
-        .pretech(2)
-        .shard(mesh, partition_spec, num_shards, shard_id)
+        .prefetch(2)
+        .shard(mesh, "dp", num_shards, shard_id)
         .build(dataset)
     )
 

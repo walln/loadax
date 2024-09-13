@@ -15,34 +15,101 @@ If you want to learn more about FSDP, the UvA DL Notebooks have a great tutorial
 
 """
 
+from dataclasses import dataclass
+from typing import Callable
 import jax
+import jax.experimental
+import jax.experimental.mesh_utils
+import jax.experimental.multihost_utils
 import jax.numpy as jnp
-from jax.experimental.pjit import pjit
 from jax.sharding import Mesh, NamedSharding, PartitionSpec
+import numpy as np
 from loadax.dataloader.distributed import DistributedDataLoader, JaxShardingStrategy
 from loadax import InMemoryDataset, Batcher
 from loadax.strategy import FixedBatchStrategy
+import os
+import flax.nnx as nnx
+import optax
+
+# Use xla flags to simulate a distributed environment
+os.environ['XLA_FLAGS'] = '--xla_force_host_platform_device_count=8'
+
+num_total_devices = len(jax.devices())
+num_data_shards = jax.process_count()
+num_model_shards = num_total_devices // num_data_shards
+
+assert num_total_devices % num_data_shards == 0, "Number of devices must be divisible by number of data shards"
+
+devices = np.array(jax.devices()).reshape((num_data_shards, num_model_shards))
+mesh = Mesh(devices, ('data', 'model'))
+
+dataset = InMemoryDataset(items=[jnp.array([i]) for i in range(128)])
+batcher = Batcher(lambda items: jnp.stack(items))
+batch_strategy = FixedBatchStrategy(batch_size=16)
+
+# This is the shard_id, which is used to determine which jax process this loader instance is running on
+sharding_strategy = JaxShardingStrategy(mesh, data_shard_axis='data')
+
+@dataclass(unsafe_hash=True)
+class MeshRules:
+    mlp: str | None = None
+    data: str | None = None
+
+    def __call__(self, *keys: str) -> tuple[str, ...]:
+        return tuple(getattr(self, key) for key in keys)
+
+mesh_rules = MeshRules(
+    mlp='model',
+    data='data',
+)
+
+class Model(nnx.Module):
+    def __init__(self, d_in: int, d_model: int, d_out: int, rngs: nnx.Rngs):
+        self.w1 = nnx.Param(
+            nnx.initializers.lecun_normal()(rngs.params(), (d_in, d_out)),
+            sharding=mesh_rules('mlp')
+        )
+        self.b1 = nnx.Param(
+            jnp.zeros((d_model,)),
+            sharding=mesh_rules('mlp')
+        )
+        self.w2 = nnx.Param(
+            nnx.initializers.lecun_normal()(rngs.params(), (d_model, d_out)),
+            sharding=mesh_rules('mlp')
+        )
+
+    def __call__(self, x):
+        return nnx.relu(x @ self.w1 + self.b1) @ self.w2
+    
+@nnx.jit    
+def create_model():
+    model = Model(1, 32, 1, rngs=nnx.Rngs(0))
+    optimizer = nnx.Optimizer(model, optax.sgd(0.1))
+    metrics = nnx.MultiMetric(
+        loss=nnx.metrics.Average('loss')
+    )
+
+    state = nnx.state(optimizer)
+    sharded_state = jax.lax.with_sharding_constraint(state, nnx.get_named_sharding(state, mesh))
+    nnx.update(optimizer, sharded_state)
+
+    return model, optimizer, metrics
+
+@nnx.jit
+def train_step(model: Model, optimizer: nnx.Optimizer, metrics: nnx.MultiMetric, batch: jnp.ndarray):
+    batch = jax.lax.with_sharding_constraint(batch, sharding_strategy.named_sharding('data'))
+    def loss_fn(model):
+        y_pred = model(batch)
+        return jnp.mean((y_pred - batch) ** 2)
+    
+    loss, grad = nnx.value_and_grad(loss_fn)(model)
+    optimizer.update(grad)
+    metrics.update(loss=loss)
 
 def test_distributed_dataloader_with_parameter_sharding():
-    # Simulate a simple dataset with 10 items
-    dataset = InMemoryDataset(items=[jnp.array([i]) for i in range(10)])
-    batcher = Batcher(lambda items: jnp.stack(items))
-    batch_strategy = FixedBatchStrategy(batch_size=1)
-
-    # Create a global mesh across the devices
-    devices = jax.devices()
-    # In real FSDP training, you want to reshape devices based on your network topology
-    # But for demonstration purposes we'll just add a 'model' axis for parameter sharding
-    mesh = Mesh(devices, ('data', 'model'))
-
-    # Sharding specification: parameters are sharded across the 'model' axis, and data across the 'data' axis
-    param_sharding_spec = PartitionSpec('model')
-    data_sharding_spec = PartitionSpec('data')
-
-    # This is the shard_id, which is used to determine which jax process this loader instance is running on
-    shard_id = 0
-    num_shards = len(devices)
-    sharding_strategy = JaxShardingStrategy(mesh, data_sharding_spec)
+    print(f"Devices: {devices}")
+    print(f"Mesh: {mesh}")
+    print(f"Sharding strategy: {sharding_strategy}")
 
     # Create the DistributedDataLoader
     dataloader = DistributedDataLoader(
@@ -52,55 +119,20 @@ def test_distributed_dataloader_with_parameter_sharding():
         num_workers=2,
         prefetch_factor=2,
         sharding_strategy=sharding_strategy,
-        shard_id=shard_id,
-        num_shards=num_shards,
     )
 
-    # Define a simple model function that works with sharded parameters
-    def simple_model(params, x):
-        return params * x  # Example of a simple linear model
+    model, optimizer, metrics = create_model()
 
-    # Initialize the model parameters and shard them across devices
-    params = jnp.array([1.0])
-    sharded_params = jax.device_put(jnp.array_split(params, num_shards), NamedSharding(mesh, param_sharding_spec))
-
-    # Define a function to compute the loss
-    def loss_fn(params, x):
-        predictions = simple_model(params, x)
-        return jnp.mean((predictions - x) ** 2)
-
-    # Define a function to compute the gradients using pjit
-    def compute_gradients(params, batch):
-        grads = jax.grad(loss_fn)(params, batch)
-        return grads
-
-    # Use pjit to handle both gradient computation and parameter updates with sharded parameters
-    for batch in dataloader:
+    for local_batch in dataloader:
         # You still have total control over array placement, so you can decide how to parallelize your
         # intra-node batch across the local devices, when to synchronize across nodes, etc. This is a really
         # powerful set of primitives and you do not need to use pjit, this is just an example of how you can
         # leverage Jax's powerful parallelization primitives in combination with Loadax to achieve distributed
-        # training.
-        local_sharded_batch = jax.device_put(jnp.array(batch), NamedSharding(mesh, data_sharding_spec))
+        # training.         
+        global_batch = sharding_strategy.distribute_global_batch(local_batch)
+        train_step(model, optimizer, metrics, global_batch)
 
-        # Compute gradients with pjit, allowing for parameter sharding across devices
-        grads = pjit(compute_gradients, in_axis_resources=(param_sharding_spec, data_sharding_spec),
-                     out_axis_resources=param_sharding_spec)(sharded_params, local_sharded_batch)
-
-        # Update the parameters using the mean gradients across the replicas
-        sharded_params -= pjit(lambda p, g: 0.1 * g, in_axis_resources=(param_sharding_spec, param_sharding_spec),
-                               out_axis_resources=param_sharding_spec)(sharded_params, grads)
-
-        # Optionally, you can also perform a forward pass on the local shard
-        sharded_result = pjit(simple_model, in_axis_resources=(param_sharding_spec, data_sharding_spec),
-                              out_axis_resources=data_sharding_spec)(sharded_params, local_sharded_batch)
-        
-        # Validate that the results are correct
-        for original, result in zip(batch, sharded_result):
-            assert jnp.all(result == original * 2)
-
-    # Aggregate the update parameters across the replicas
-    final_params = jax.tree_map(lambda x: x[0], sharded_params)
-    print(f"Final params: {final_params}")
+        for metric, value in metrics.compute().items():
+            print(f"train_{metric}: {value}")
 
 test_distributed_dataloader_with_parameter_sharding()

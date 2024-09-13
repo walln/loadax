@@ -38,7 +38,7 @@ def test_distributed_dataloader_on_logical_devices():
     num_shards = len(jax.devices())
     # Create a sharding strategy that loadax can use to determine how to splice the dataset and orchestrate
     # the distributed data loading
-    sharding_strategy = JaxShardingStrategy(mesh, sharding_spec)
+    sharding_strategy = JaxShardingStrategy(mesh, 'data')
 
     # Create the DistributedDataLoader
     dataloader = DistributedDataLoader(
@@ -77,7 +77,7 @@ def test_distributed_dataloader_on_logical_devices():
     for batch in dataloader:
         # Convert the batch to a local shard this will change based on what your batch looks like
         # in our case batch is just a jax array, but your could have pytrees, classes, etc.
-        local_sharded_batch = jax.device_put(jnp.array(batch), NamedSharding(mesh, sharding_spec))
+        local_sharded_batch = sharding_strategy.distribute_global_batch(batch)
 
         # Compute the gradients (You can use pjit automatic parallelization here instead if you prefer)
         # we'll use pmap here for demonstration purposes as we can then easily parallelize the per-node
