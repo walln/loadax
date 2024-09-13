@@ -10,7 +10,10 @@ This example is a simple demonstration of the FSDP training strategy, which shar
 and supplies each device with a local shard of the global data. In a distributed setting, this means that both the
 data and model are sharded across nodes/devices, such that the model may not be purely replicated across the devices.
 
-If you want to learn more about FSDP, the UvA DL Notebooks have a great tutorial here: https://uvadlc-notebooks.readthedocs.io/en/latest/tutorial_notebooks/scaling/JAX/data_parallel_fsdp.html I would recommend the entire tutorials as a great resource for understanding some of the concepts behind distributed training.
+If you want to learn more about FSDP, the UvA DL Notebooks have a great tutorial 
+here: https://uvadlc-notebooks.readthedocs.io/en/latest/tutorial_notebooks/scaling/JAX/data_parallel_fsdp.html 
+I would recommend the entire tutorials as a great resource for understanding some of the concepts 
+behind distributed training.
 
 """
 
