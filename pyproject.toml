@@ -1,6 +1,6 @@
 [project]
 name = "loadax"
-version = "0.1.0"
+version = "0.1.1"
 description = "Dataloading for Jax"
 authors = [
     { name = "Nick Wall", email = "46641379+walln@users.noreply.github.com" },
@@ -8,11 +8,7 @@ authors = [
 readme = "README.md"
 license = { file = "LICENSE" }
 
-dependencies = [
-    "jax>=0.4.15",
-    "flax>=0.9.0",
-    "optax>=0.2.3",
-]
+dependencies = ["jax>=0.4.15", "flax>=0.9.0", "optax>=0.2.3"]
 requires-python = ">= 3.8"
 
 [build-system]
