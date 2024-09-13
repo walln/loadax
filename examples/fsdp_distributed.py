@@ -4,8 +4,7 @@ This example is not meant to be a complete training loop, but rather a demonstra
 Jax's powerful parallelization primitives in combination with Loadax to achieve distributed training.
 
 Loadax does not lock you into any particular sharding strategy, but instead allows you to define your own
-sharding strategy and optimize for your architecture, network topology, device placement, etc. In fact there is no reason that you cannot create new training paradigms ontop of Loadax, such as asynchronous training, or training on
-heterogeneous devices.
+sharding strategy and optimize for your architecture, network topology, device placement, etc. In fact there is no reason that you cannot create new training paradigms ontop of Loadax or fully customize your training topology.
 
 This example is a simple demonstration of the FSDP training strategy, which shards the model across the devices
 and supplies each device with a local shard of the global data. In a distributed setting, this means that both the
