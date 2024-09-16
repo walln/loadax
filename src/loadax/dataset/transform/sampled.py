@@ -1,7 +1,8 @@
 """Dataset transformations that represent sampling items from the source dataset."""
 
-import random
 from typing import TypeVar
+
+import jax.random
 
 from loadax.dataset.protocol import Dataset
 
@@ -36,7 +37,7 @@ class SampledDatasetWithoutReplacement(Dataset[DatasetItem]):
         indices (list[int]): The indices to sample from.
     """
 
-    def __init__(self, dataset: Dataset[DatasetItem], sample_size: int):
+    def __init__(self, dataset: Dataset[DatasetItem], sample_size: int, key: jax.Array):
         """Sample a subset of the items in the source dataset without replacement.
 
         This dataset allows sampling a subset of the items in the source dataset without
@@ -55,16 +56,19 @@ class SampledDatasetWithoutReplacement(Dataset[DatasetItem]):
 
         Example:
             >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> sampled_dataset = SampledDatasetWithoutReplacement(dataset, 3)
+            >>> key = jax.random.PRNGKey(0)
+            >>> sampled_dataset = SampledDatasetWithoutReplacement(dataset, 3, key)
             >>> print(sampled_dataset.get(0))
 
         Args:
             dataset (Dataset): The dataset to sample from.
             sample_size (int): The size of the sample to take.
+            key (jax.random.KeyArray): The key to use for sampling.
         """
         self.dataset = dataset
         self.sample_size = sample_size
         self.indices: list[int] = []
+        self.key = key
 
     def __len__(self) -> int:
         """Get the length of the dataset.
@@ -73,7 +77,8 @@ class SampledDatasetWithoutReplacement(Dataset[DatasetItem]):
 
         Example:
             >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> sampled_dataset = SampledDatasetWithoutReplacement(dataset, 3)
+            >>> key = jax.random.PRNGKey(0)
+            >>> sampled_dataset = SampledDatasetWithoutReplacement(dataset, 3, key)
             >>> print(len(sampled_dataset))
 
         Returns:
@@ -82,10 +87,10 @@ class SampledDatasetWithoutReplacement(Dataset[DatasetItem]):
         return self.sample_size
 
     def _index(self) -> int:
-        if len(self.indices) == 0:
-            self.indices = list(range(len(self.dataset)))
-            # shuffle the indices
-            random.shuffle(self.indices)
+        if not self.indices:
+            self.key, subkey = jax.random.split(self.key)
+            permuted = jax.random.permutation(subkey, len(self.dataset))
+            self.indices = list(permuted[: self.sample_size])
         return self.indices.pop()
 
     def get(self, index: int) -> DatasetItem | None:
@@ -112,7 +117,6 @@ class SampledDatasetWithoutReplacement(Dataset[DatasetItem]):
         return self.dataset.get(self._index())
 
 
-# TODO: Look at the usage of sample_size. This does not seem correct.
 class SampledDatasetWithReplacement(Dataset[DatasetItem]):
     """Sample a subset of the items in the source dataset with replacement.
 
@@ -134,7 +138,7 @@ class SampledDatasetWithReplacement(Dataset[DatasetItem]):
         sample_size (int): The size of the sample to take.
     """
 
-    def __init__(self, dataset: Dataset[DatasetItem], sample_size: int):
+    def __init__(self, dataset: Dataset[DatasetItem], sample_size: int, key: jax.Array):
         """Sample a subset of the items in the source dataset with replacement.
 
         This dataset allows sampling a subset of the items in the source dataset with
@@ -147,15 +151,18 @@ class SampledDatasetWithReplacement(Dataset[DatasetItem]):
 
         Example:
             >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> sampled_dataset = SampledDatasetWithReplacement(dataset, 3)
+            >>> key = jax.random.PRNGKey(0)
+            >>> sampled_dataset = SampledDatasetWithReplacement(dataset, 3, key)
             >>> print(sampled_dataset.get(0))
 
         Args:
             dataset (Dataset): The dataset to sample from.
             sample_size (int): The size of the sample to take.
+            key (jax.random.KeyArray): The key to use for sampling.
         """
         self.dataset = dataset
         self.sample_size = sample_size
+        self.key = key
 
     def __len__(self) -> int:
         """Get the length of the dataset.
@@ -181,7 +188,8 @@ class SampledDatasetWithReplacement(Dataset[DatasetItem]):
 
         Example:
             >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> sampled_dataset = SampledDatasetWithReplacement(dataset, 3)
+            >>> key = jax.random.PRNGKey(0)
+            >>> sampled_dataset = SampledDatasetWithReplacement(dataset, 3, key)
             >>> print(sampled_dataset.get(0))
 
         Args:
@@ -194,6 +202,6 @@ class SampledDatasetWithReplacement(Dataset[DatasetItem]):
         if index >= self.sample_size or len(self.dataset) == 0:
             return None
 
-        # TODO: Look at using jax PRNG random sampling
-        random_index = random.randint(0, len(self.dataset) - 1)
-        return self.dataset.get(random_index)
+        self.key, subkey = jax.random.split(self.key)
+        random_index = jax.random.randint(subkey, (), 0, len(self.dataset))
+        return self.dataset.get(int(random_index))

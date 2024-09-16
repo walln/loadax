@@ -1,7 +1,9 @@
 """Shuffled dataset that shuffles the items in the source dataset."""
 
-import random
 from typing import TypeVar
+
+import jax
+import jax.random
 
 from loadax.dataset.protocol import Dataset
 
@@ -30,7 +32,7 @@ class ShuffledDataset(Dataset[DatasetItem]):
         indices (list[int]): The indices to shuffle.
     """
 
-    def __init__(self, dataset: Dataset[DatasetItem]):
+    def __init__(self, dataset: Dataset[DatasetItem], key: jax.Array):
         """Shuffle the items in the source dataset.
 
         The shuffling is performed lazily and does not actually shuffle the underlying
@@ -44,15 +46,17 @@ class ShuffledDataset(Dataset[DatasetItem]):
 
         Example:
             >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> shuffled_dataset = ShuffledDataset(dataset)
+            >>> key = jax.random.PRNGKey(0)
+            >>> shuffled_dataset = ShuffledDataset(dataset, key)
             >>> print(shuffled_dataset.get(0))
 
         Args:
             dataset (Dataset): The dataset to shuffle.
+            key (jax.random.KeyArray): The key to use for shuffling.
         """
         self.dataset = dataset
-        self.indices = list(range(len(dataset)))
-        random.shuffle(self.indices)
+        self.key = key
+        self.indices = list(jax.random.permutation(self.key, len(dataset)))
 
     def __len__(self) -> int:
         """Get the length of the dataset.

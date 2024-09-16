@@ -1,3 +1,5 @@
+import jax.random
+
 from loadax import (
     InMemoryDataset,
     SampledDatasetWithoutReplacement,
@@ -7,7 +9,8 @@ from loadax import (
 
 def test_sampled_dataset_without_replacement():
     dataset = InMemoryDataset([1, 2, 3, 4, 5])
-    sampled_dataset = SampledDatasetWithoutReplacement(dataset, 3)
+    key = jax.random.PRNGKey(0)
+    sampled_dataset = SampledDatasetWithoutReplacement(dataset, 3, key)
 
     samples = [sampled_dataset.get(i) for i in range(3)]
     assert len(sampled_dataset) == 3
@@ -18,7 +21,8 @@ def test_sampled_dataset_without_replacement():
 
 def test_sampled_dataset_without_replacement_no_duplicates():
     dataset = InMemoryDataset([1, 2, 3, 4, 5])
-    sampled_dataset = SampledDatasetWithoutReplacement(dataset, 5)
+    key = jax.random.PRNGKey(0)
+    sampled_dataset = SampledDatasetWithoutReplacement(dataset, 5, key)
 
     samples = [sampled_dataset.get(i) for i in range(5)]
     assert len(sampled_dataset) == 5
@@ -29,7 +33,8 @@ def test_sampled_dataset_without_replacement_no_duplicates():
 
 def test_sampled_dataset_with_replacement():
     dataset = InMemoryDataset([1, 2, 3, 4, 5])
-    sampled_dataset = SampledDatasetWithReplacement(dataset, 3)
+    key = jax.random.PRNGKey(0)
+    sampled_dataset = SampledDatasetWithReplacement(dataset, 3, key)
 
     samples = [sampled_dataset.get(i) for i in range(3)]
     assert len(sampled_dataset) == 3
@@ -40,7 +45,8 @@ def test_sampled_dataset_with_replacement():
 
 def test_sampled_dataset_with_replacement_all_indices():
     dataset = InMemoryDataset([1, 2, 3, 4, 5])
-    sampled_dataset = SampledDatasetWithReplacement(dataset, 10)
+    key = jax.random.PRNGKey(0)
+    sampled_dataset = SampledDatasetWithReplacement(dataset, 10, key)
 
     samples = [sampled_dataset.get(i) for i in range(10)]
     assert len(sampled_dataset) == 10
@@ -51,7 +57,8 @@ def test_sampled_dataset_with_replacement_all_indices():
 
 def test_sampled_dataset_without_replacement_edge_case():
     dataset = InMemoryDataset([1, 2])
-    sampled_dataset = SampledDatasetWithoutReplacement(dataset, 2)
+    key = jax.random.PRNGKey(0)
+    sampled_dataset = SampledDatasetWithoutReplacement(dataset, 2, key)
 
     samples = [sampled_dataset.get(i) for i in range(2)]
     assert len(sampled_dataset) == 2
@@ -62,7 +69,8 @@ def test_sampled_dataset_without_replacement_edge_case():
 
 def test_sampled_dataset_with_replacement_edge_case():
     dataset = InMemoryDataset([1, 2])
-    sampled_dataset = SampledDatasetWithReplacement(dataset, 2)
+    key = jax.random.PRNGKey(0)
+    sampled_dataset = SampledDatasetWithReplacement(dataset, 2, key)
 
     samples = [sampled_dataset.get(i) for i in range(2)]
     assert len(sampled_dataset) == 2
@@ -73,7 +81,8 @@ def test_sampled_dataset_with_replacement_edge_case():
 
 def test_sampled_dataset_without_replacement_empty():
     dataset = InMemoryDataset([])
-    sampled_dataset = SampledDatasetWithoutReplacement(dataset, 3)
+    key = jax.random.PRNGKey(0)
+    sampled_dataset = SampledDatasetWithoutReplacement(dataset, 3, key)
 
     assert len(sampled_dataset) == 3
     assert sampled_dataset.get(0) is None
@@ -83,7 +92,8 @@ def test_sampled_dataset_without_replacement_empty():
 
 def test_sampled_dataset_with_replacement_empty():
     dataset = InMemoryDataset([])
-    sampled_dataset = SampledDatasetWithReplacement(dataset, 3)
+    key = jax.random.PRNGKey(0)
+    sampled_dataset = SampledDatasetWithReplacement(dataset, 3, key)
 
     assert len(sampled_dataset) == 3
     assert sampled_dataset.get(0) is None
@@ -93,7 +103,8 @@ def test_sampled_dataset_with_replacement_empty():
 
 def test_sampled_dataset_without_replacement_single_element():
     dataset = InMemoryDataset([42])
-    sampled_dataset = SampledDatasetWithoutReplacement(dataset, 1)
+    key = jax.random.PRNGKey(0)
+    sampled_dataset = SampledDatasetWithoutReplacement(dataset, 1, key)
 
     assert len(sampled_dataset) == 1
     assert sampled_dataset.get(0) == 42
@@ -102,7 +113,8 @@ def test_sampled_dataset_without_replacement_single_element():
 
 def test_sampled_dataset_with_replacement_single_element():
     dataset = InMemoryDataset([42])
-    sampled_dataset = SampledDatasetWithReplacement(dataset, 3)
+    key = jax.random.PRNGKey(0)
+    sampled_dataset = SampledDatasetWithReplacement(dataset, 3, key)
 
     assert len(sampled_dataset) == 3
     assert sampled_dataset.get(0) == 42
@@ -113,8 +125,28 @@ def test_sampled_dataset_with_replacement_single_element():
 
 def test_sampled_dataset_without_replacement_repeated_sampling():
     dataset = InMemoryDataset([1, 2, 3, 4, 5])
-    sampled_dataset1 = SampledDatasetWithoutReplacement(dataset, 3)
-    sampled_dataset2 = SampledDatasetWithoutReplacement(dataset, 3)
+    key = jax.random.PRNGKey(0)
+    sampled_dataset1 = SampledDatasetWithoutReplacement(dataset, 3, key)
+    sampled_dataset2 = SampledDatasetWithoutReplacement(dataset, 3, key)
+
+    samples1 = [sampled_dataset1.get(i) for i in range(3)]
+    samples2 = [sampled_dataset2.get(i) for i in range(3)]
+
+    assert len(sampled_dataset1) == 3
+    assert len(sampled_dataset2) == 3
+    assert len(samples1) == 3
+    assert len(samples2) == 3
+    assert all(item in [1, 2, 3, 4, 5] for item in samples1)
+    assert all(item in [1, 2, 3, 4, 5] for item in samples2)
+    assert set(samples1) == set(samples2)
+
+
+def test_sampled_dataset_without_replacement_repeated_sampling_shared_key():
+    dataset = InMemoryDataset([1, 2, 3, 4, 5])
+    key = jax.random.PRNGKey(0)
+    key, subkey = jax.random.split(key)
+    sampled_dataset1 = SampledDatasetWithoutReplacement(dataset, 3, key)
+    sampled_dataset2 = SampledDatasetWithoutReplacement(dataset, 3, subkey)
 
     samples1 = [sampled_dataset1.get(i) for i in range(3)]
     samples2 = [sampled_dataset2.get(i) for i in range(3)]
@@ -130,8 +162,10 @@ def test_sampled_dataset_without_replacement_repeated_sampling():
 
 def test_sampled_dataset_with_replacement_repeated_sampling():
     dataset = InMemoryDataset([1, 2, 3, 4, 5])
-    sampled_dataset1 = SampledDatasetWithReplacement(dataset, 3)
-    sampled_dataset2 = SampledDatasetWithReplacement(dataset, 3)
+    key = jax.random.PRNGKey(1)
+    key, subkey = jax.random.split(key)
+    sampled_dataset1 = SampledDatasetWithReplacement(dataset, 3, key)
+    sampled_dataset2 = SampledDatasetWithReplacement(dataset, 3, subkey)
 
     samples1 = [sampled_dataset1.get(i) for i in range(3)]
     samples2 = [sampled_dataset2.get(i) for i in range(3)]
@@ -143,3 +177,21 @@ def test_sampled_dataset_with_replacement_repeated_sampling():
     assert all(item in [1, 2, 3, 4, 5] for item in samples1)
     assert all(item in [1, 2, 3, 4, 5] for item in samples2)
     assert samples1 != samples2
+
+
+def test_sampled_dataset_with_replacement_repeated_sampling_shared_key():
+    dataset = InMemoryDataset([1, 2, 3, 4, 5])
+    key = jax.random.PRNGKey(1)
+    sampled_dataset1 = SampledDatasetWithReplacement(dataset, 3, key)
+    sampled_dataset2 = SampledDatasetWithReplacement(dataset, 3, key)
+
+    samples1 = [sampled_dataset1.get(i) for i in range(3)]
+    samples2 = [sampled_dataset2.get(i) for i in range(3)]
+
+    assert len(sampled_dataset1) == 3
+    assert len(sampled_dataset2) == 3
+    assert len(samples1) == 3
+    assert len(samples2) == 3
+    assert all(item in [1, 2, 3, 4, 5] for item in samples1)
+    assert all(item in [1, 2, 3, 4, 5] for item in samples2)
+    assert samples1 == samples2
