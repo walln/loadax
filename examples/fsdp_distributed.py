@@ -27,7 +27,8 @@ import jax.experimental.multihost_utils
 import jax.numpy as jnp
 from jax.sharding import Mesh, NamedSharding, PartitionSpec
 import numpy as np
-from loadax.dataloader.distributed import DistributedDataLoader, JaxShardingStrategy
+from loadax.dataloader.distributed import DistributedDataLoader
+from loadax.dataloader.sharding import DistributedShardingStrategy
 from loadax import InMemoryDataset, Batcher
 from loadax.strategy import FixedBatchStrategy
 import os
@@ -51,7 +52,7 @@ batcher = Batcher(lambda items: jnp.stack(items))
 batch_strategy = FixedBatchStrategy(batch_size=16)
 
 # This is the shard_id, which is used to determine which jax process this loader instance is running on
-sharding_strategy = JaxShardingStrategy(mesh, data_shard_axis='data')
+sharding_strategy = DistributedShardingStrategy(mesh, data_shard_axis='data')
 
 @dataclass(unsafe_hash=True)
 class MeshRules:

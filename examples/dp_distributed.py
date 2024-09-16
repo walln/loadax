@@ -17,7 +17,8 @@ across the nodes to update the model parameters.
 import jax
 import jax.numpy as jnp
 from jax.sharding import Mesh, PartitionSpec
-from loadax.dataloader.distributed import DistributedDataLoader, JaxShardingStrategy
+from loadax.dataloader.distributed import DistributedDataLoader
+from loadax.dataloader.sharding import DistributedShardingStrategy
 from loadax import InMemoryDataset, Batcher
 from loadax.strategy import FixedBatchStrategy
 
@@ -39,7 +40,7 @@ def test_distributed_dataloader_on_logical_devices():
     num_shards = len(jax.devices())
     # Create a sharding strategy that loadax can use to determine how to splice the dataset and orchestrate
     # the distributed data loading
-    sharding_strategy = JaxShardingStrategy(mesh, 'data')
+    sharding_strategy = DistributedShardingStrategy(mesh, 'data')
 
     # Create the DistributedDataLoader
     dataloader = DistributedDataLoader(
