@@ -117,17 +117,15 @@ With the inter-node distribution handled for you, it is now trivial to build adv
 
 ```python
 from loadax import DataLoader, InMemoryDataset, Batcher
+from loadax.sharding_utilities import fsdp_sharding
 from jax.sharding import Mesh, PartitionSpec, NamedSharding
 import jax.numpy as jnp
 
 # Standard jax distributed setup
 ...
 
-# Create a mesh across all the jax devices
-# You can customize the number of data shards or let it default to the number of hosts in the cluster 
-# (model_shards is for model parallelism, you can ignore this if not needed)
-devices = np.array(jax.devices()).reshape((num_data_shards, num_model_shards))
-mesh = Mesh(devices, ('data', 'model'))
+# Create your own mesh or use the presets provided by loadax
+mesh, axis_names = fsdp_sharding()
 
 dataset_size = 128
 batch_size = 8
@@ -141,7 +139,7 @@ dataloader = (
         .batch_size(batch_size)
         .workers(2)
         .prefetch(2)
-        .shard(mesh, data_axis_name='data')
+        .shard(mesh, data_axis_name=axis_names[0])
         .build(dataset)
     )
 
@@ -150,11 +148,9 @@ def create_model():
     ...
 
 model, optimizer = create_model()
-def simple_model(x, params):
-    return x * params
 
 def train_step(model, optimizer, batch):
-    # Your loss calculation logic
+    # Your loss calculation logic...
     return loss
 
 for local_batch in dataloader:
@@ -166,7 +162,7 @@ for local_batch in dataloader:
     loss = train_step(model, optimizer, global_batch)
 ```
 
-The sharding primitives that Loadax provides are powerful as they declare the way data is distributed up front. This enables loadax to be deterministic as is decides which elements to load on each shard, and even which elements to load into each specific batch. This guaranteed determinism enables you to focus on other things rather than ensuring that your dataloading is correct and can be reproduced.
+The sharding primitives that Loadax provides are powerful as they declare the way data is distributed up front. This enables loadax to be deterministic as is decides which elements to load on each process, and even which elements to load into each specific batch. This guaranteed determinism enables you to focus on other things rather than ensuring that your dataloading is correct and can be reproduced.
 
 ### Type Hinting
 

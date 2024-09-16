@@ -21,25 +21,26 @@ from loadax.dataloader.distributed import DistributedDataLoader
 from loadax.dataloader.sharding import DistributedShardingStrategy
 from loadax import InMemoryDataset, Batcher
 from loadax.strategy import FixedBatchStrategy
+from loadax.sharding_utilities import ddp_sharding
+
+# If using multiple hosts, you will need to initialize the jax distributed runtime
+# jax.distributed.initialize()
 
 
 def test_distributed_dataloader_on_logical_devices():
-    # Simulate a simple dataset with 10 items
-    dataset = InMemoryDataset(items=[jnp.array([i]) for i in range(10)])
+    # Simulate a simple dataset with 128 items
+    dataset = InMemoryDataset(items=[jnp.array([i]) for i in range(128)])
     batcher = Batcher(lambda items: jnp.stack(items))
     batch_strategy = FixedBatchStrategy(batch_size=1)
 
-    # Create a global mesh across these logical devices
-    mesh = Mesh(jax.devices(), ('data',))
-    sharding_spec = PartitionSpec('data')
+    # Create a global mesh across the logical devices, loadax provides a preset for DDP
+    # this preset will ensure each node gets a partition of the data that is precomputed
+    # to match the sharding that will be used to supply the local devices with the data.
+    # You can also create your own sharding configurations.
+    mesh, axis_names = ddp_sharding()
 
-    # This is the shard_id, which is used to detemine which jax process this loader instance is running on
-    shard_id = 0
-    # The num_shards should be the number of processes you are running on, this is almost never changed,
-    # unless you are doing something really special
-    num_shards = len(jax.devices())
-    # Create a sharding strategy that loadax can use to determine how to splice the dataset and orchestrate
-    # the distributed data loading
+    # Create a sharding strategy that loadax can use to determine how to partition the dataset 
+    # and orchestrate the distributed data loading
     sharding_strategy = DistributedShardingStrategy(mesh, 'data')
 
     # Create the DistributedDataLoader
@@ -50,9 +51,6 @@ def test_distributed_dataloader_on_logical_devices():
         num_workers=2,
         prefetch_factor=2,
         sharding_strategy=sharding_strategy,
-        # These do not need to be specified, as Loadax can infer them for you
-        shard_id=shard_id,
-        num_shards=num_shards,
     )
 
     # Define a simple model function
@@ -68,10 +66,10 @@ def test_distributed_dataloader_on_logical_devices():
     params = jnp.array([1.0])
 
     # We are using a data parallel strategy, so we need to replicate the model across the devices
+    # check your NN framework's documentation for how to do this
     replicated_params = jnp.broadcast_to(params, (len(jax.devices()),) + params.shape)
 
-    # Define a function to compute the gradients (You can use pjit automatic parallelization here instead
-    # if you prefer, but for demonstration purposes we'll use pmap)
+    # Define a function to compute the gradients
     def compute_gradients(params, batch):
         grads = jax.grad(loss_fn)(params, batch)
         return grads

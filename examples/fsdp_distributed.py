@@ -34,24 +34,25 @@ from loadax.strategy import FixedBatchStrategy
 import os
 import flax.nnx as nnx
 import optax
+from loadax.sharding_utilities import fsdp_sharding
 
 # Use xla flags to simulate a distributed environment
 os.environ['XLA_FLAGS'] = '--xla_force_host_platform_device_count=8'
 
-num_total_devices = len(jax.devices())
-num_data_shards = jax.process_count()
-num_model_shards = num_total_devices // num_data_shards
+# If using multiple hosts, you will need to initialize the jax distributed runtime
+# jax.distributed.initialize()
 
-assert num_total_devices % num_data_shards == 0, "Number of devices must be divisible by number of data shards"
-
-devices = np.array(jax.devices()).reshape((num_data_shards, num_model_shards))
-mesh = Mesh(devices, ('data', 'model'))
+# You can create your own sharding configurations or use the presets provided by loadax
+# See the documentation for more information
+mesh, axis_names = fsdp_sharding()
 
 dataset = InMemoryDataset(items=[jnp.array([i]) for i in range(128)])
 batcher = Batcher(lambda items: jnp.stack(items))
 batch_strategy = FixedBatchStrategy(batch_size=16)
 
-# This is the shard_id, which is used to determine which jax process this loader instance is running on
+# The data shard axis is used to determine how to construct the global batch from the local batches
+# this is optional, but the most convenient way to do FSDP training. To understand why, see the
+# documentation for the DistributedShardingStrategy
 sharding_strategy = DistributedShardingStrategy(mesh, data_shard_axis='data')
 
 @dataclass(unsafe_hash=True)
@@ -110,11 +111,6 @@ def train_step(model: Model, optimizer: nnx.Optimizer, metrics: nnx.MultiMetric,
     metrics.update(loss=loss)
 
 def test_distributed_dataloader_with_parameter_sharding():
-    print(f"Devices: {devices}")
-    print(f"Mesh: {mesh}")
-    print(f"Sharding strategy: {sharding_strategy}")
-
-    # Create the DistributedDataLoader
     dataloader = DistributedDataLoader(
         dataset=dataset,
         batcher=batcher,
