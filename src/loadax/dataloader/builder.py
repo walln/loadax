@@ -5,8 +5,13 @@ from typing import Generic, TypeVar
 from jax.sharding import Mesh
 
 from loadax.batcher import Batcher
-from loadax.dataloader.distributed import DistributedDataLoader, JaxShardingStrategy
+from loadax.dataloader.distributed import DistributedDataLoader
 from loadax.dataloader.naive import NaiveDataLoader
+from loadax.dataloader.sharding import (
+    DistributedShardingStrategy,
+    NoShardingStrategy,
+    ShardingStrategy,
+)
 from loadax.dataset import Dataset
 from loadax.strategy import BatchStrategy, FixedBatchStrategy
 
@@ -50,7 +55,7 @@ class DataLoader(Generic[DatasetItem, Batch]):
     strategy: BatchStrategy[DatasetItem] | None = None
     num_workers: int | None = 1
     prefetch_factor: int | None = 2
-    sharding_strategy: JaxShardingStrategy | None = None
+    sharding_strategy: ShardingStrategy = NoShardingStrategy()
     shard_id: int | None = None
     num_shards: int | None = None
 
@@ -202,9 +207,12 @@ class DataLoader(Generic[DatasetItem, Batch]):
         Returns:
             DataLoader: The dataloader with the mesh and partition spec set.
         """
-        self.sharding_strategy = JaxShardingStrategy(
-            mesh, data_shard_axis=data_axis_name
-        )
+        if num_shards and num_shards <= 1:
+            self.sharding_strategy = NoShardingStrategy()
+        else:
+            self.sharding_strategy = DistributedShardingStrategy(
+                mesh, data_shard_axis=data_axis_name
+            )
         self.shard_id = shard_id
         self.num_shards = num_shards
         return self

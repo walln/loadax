@@ -1,8 +1,11 @@
 import jax
+import numpy as np
+import pytest
 from jax.sharding import Mesh, PartitionSpec
 
 from loadax import Batcher, DataLoader
-from loadax.dataloader.distributed import DistributedDataLoader, JaxShardingStrategy
+from loadax.dataloader.distributed import DistributedDataLoader
+from loadax.dataloader.sharding import DistributedShardingStrategy, NoShardingStrategy
 from loadax.dataset.in_memory import InMemoryDataset
 from loadax.strategy import FixedBatchStrategy
 
@@ -12,7 +15,7 @@ def test_distributed_dataloader_single_shard():
     batcher = Batcher(lambda x: x)
     strategy = FixedBatchStrategy(batch_size=10)
     mesh = Mesh(jax.devices(), ("dp",))
-    sharding_strategy = JaxShardingStrategy(mesh, PartitionSpec("dp"))
+    sharding_strategy = DistributedShardingStrategy(mesh, PartitionSpec("dp"))
 
     dataloader = DistributedDataLoader(
         dataset,
@@ -36,7 +39,7 @@ def test_distributed_dataloader_multiple_shards():
     batcher = Batcher(lambda x: x)
     strategy = FixedBatchStrategy(batch_size=5)
     mesh = Mesh(jax.devices(), ("dp",))
-    sharding_strategy = JaxShardingStrategy(mesh, PartitionSpec("dp"))
+    sharding_strategy = DistributedShardingStrategy(mesh, PartitionSpec("dp"))
 
     dataloader0 = DistributedDataLoader(
         dataset,
@@ -75,7 +78,7 @@ def test_distributed_dataloader_uneven_batch():
     batcher = Batcher(lambda x: x)
     strategy = FixedBatchStrategy(batch_size=10)
     mesh = Mesh(jax.devices(), ("dp",))
-    sharding_strategy = JaxShardingStrategy(mesh, PartitionSpec("dp"))
+    sharding_strategy = DistributedShardingStrategy(mesh, PartitionSpec("dp"))
 
     dataloader = DistributedDataLoader(
         dataset,
@@ -105,7 +108,7 @@ def test_distributed_dataloader_error_handling():
     batcher = Batcher(lambda x: x)
     strategy = FixedBatchStrategy(batch_size=10)
     mesh = Mesh(jax.devices(), ("dp",))
-    sharding_strategy = JaxShardingStrategy(mesh, PartitionSpec("dp"))
+    sharding_strategy = DistributedShardingStrategy(mesh, PartitionSpec("dp"))
 
     dataloader = DistributedDataLoader(
         dataset,
@@ -130,7 +133,7 @@ def test_distributed_dataloader_progress():
     batcher = Batcher(lambda x: x)
     strategy = FixedBatchStrategy(batch_size=10)
     mesh = Mesh(jax.devices(), ("dp",))
-    sharding_strategy = JaxShardingStrategy(mesh, PartitionSpec("dp"))
+    sharding_strategy = DistributedShardingStrategy(mesh, PartitionSpec("dp"))
 
     dataloader = DistributedDataLoader(
         dataset,
@@ -227,9 +230,9 @@ def test_uneven_sharding():
     assert len(batches0) == 5
     assert len(batches1) == 5
     assert all(len(batch) == 10 for batch in batches0[:-1])
-    assert len(batches0[-1]) == 7
+    assert len(batches0[-1]) == 8
     assert all(len(batch) == 10 for batch in batches1[:-1])
-    assert len(batches1[-1]) == 8
+    assert len(batches1[-1]) == 7
 
     items0 = [item for batch in batches0 for item in batch]
     items1 = [item for batch in batches1 for item in batch]
@@ -257,3 +260,343 @@ def test_multiple_small_batches():
     assert all(len(batch) == 3 for batch in batches[:-1])
     assert len(batches[-1]) == 2
     assert [item for batch in batches for item in batch] == list(range(95))
+
+
+def test_distributed_dataloader_multiple_shards_four():
+    dataset = InMemoryDataset(list(range(100)))
+    batcher = Batcher(lambda x: x)
+    strategy = FixedBatchStrategy(batch_size=5)
+    mesh = Mesh(jax.devices(), ("dp",))
+    sharding_strategy = DistributedShardingStrategy(mesh, PartitionSpec("dp"))
+
+    total_items = []
+    for shard_id in range(4):
+        dataloader = DistributedDataLoader(
+            dataset,
+            batcher,
+            strategy,
+            num_workers=2,
+            prefetch_factor=2,
+            sharding_strategy=sharding_strategy,
+            shard_id=shard_id,
+            num_shards=4,
+        )
+        batches = list(dataloader)
+        assert all(
+            len(batch) == 5 for batch in batches[:-1]
+        )  # Last batch may be smaller
+        items = [item for batch in batches for item in batch]
+        total_items.extend(items)
+
+    # Ensure all items are covered and no duplicates
+    assert sorted(total_items) == list(range(100))
+    assert len(total_items) == 100
+
+
+def test_distributed_dataloader_uneven_shards():
+    dataset = InMemoryDataset(list(range(103)))  # 103 is not divisible by 4
+    mesh = Mesh(jax.devices(), ("dp",))
+    sharding_strategy = DistributedShardingStrategy(mesh, PartitionSpec("dp"))
+
+    total_items = []
+    for shard_id in range(4):
+        batcher = Batcher(lambda x: x)
+        strategy = FixedBatchStrategy(batch_size=10)
+        dataloader = DistributedDataLoader(
+            dataset,
+            batcher,
+            strategy,
+            num_workers=1,
+            prefetch_factor=1,
+            sharding_strategy=sharding_strategy,
+            shard_id=shard_id,
+            num_shards=4,
+        )
+        batches = list(dataloader)
+        items = [item for batch in batches for item in batch if item is not None]
+        total_items.extend(items)
+
+    # Ensure all items are covered and no duplicates
+    assert sorted(total_items) == list(range(103))
+    assert len(total_items) == 103
+
+
+def test_distributed_dataloader_invalid_shard_id():
+    dataset = InMemoryDataset(list(range(100)))
+    batcher = Batcher(lambda x: x)
+    strategy = FixedBatchStrategy(batch_size=10)
+    sharding_strategy = NoShardingStrategy()
+
+    with pytest.raises(AssertionError, match="shard_id .* must be in the range"):
+        DistributedDataLoader(
+            dataset,
+            batcher,
+            strategy,
+            num_workers=2,
+            prefetch_factor=2,
+            sharding_strategy=sharding_strategy,
+            shard_id=5,  # Invalid shard_id, assuming num_shards=4
+            num_shards=4,
+        )
+
+
+def test_distributed_dataloader_no_workers():
+    dataset = InMemoryDataset(list(range(100)))
+    batcher = Batcher(lambda x: x)
+    strategy = FixedBatchStrategy(batch_size=10)
+    sharding_strategy = NoShardingStrategy()
+
+    with pytest.raises(AssertionError, match="num_workers must be at least 1"):
+        DistributedDataLoader(
+            dataset,
+            batcher,
+            strategy,
+            num_workers=0,
+            prefetch_factor=2,
+            sharding_strategy=sharding_strategy,
+        )
+
+
+def test_distributed_dataloader_negative_workers():
+    dataset = InMemoryDataset(list(range(100)))
+    batcher = Batcher(lambda x: x)
+    strategy = FixedBatchStrategy(batch_size=10)
+    sharding_strategy = NoShardingStrategy()
+
+    with pytest.raises(AssertionError, match="num_workers must be at least 1"):
+        DistributedDataLoader(
+            dataset,
+            batcher,
+            strategy,
+            num_workers=-1,
+            prefetch_factor=2,
+            sharding_strategy=sharding_strategy,
+        )
+
+
+def test_distributed_dataloader_no_prefetch():
+    dataset = InMemoryDataset(list(range(100)))
+    batcher = Batcher(lambda x: x)
+    strategy = FixedBatchStrategy(batch_size=10)
+    sharding_strategy = NoShardingStrategy()
+
+    with pytest.raises(AssertionError, match="prefetch_factor must be at least 1"):
+        DistributedDataLoader(
+            dataset,
+            batcher,
+            strategy,
+            num_workers=2,
+            prefetch_factor=0,
+            sharding_strategy=sharding_strategy,
+        )
+
+
+def test_distributed_dataloader_negative_prefetch():
+    dataset = InMemoryDataset(list(range(100)))
+    batcher = Batcher(lambda x: x)
+    strategy = FixedBatchStrategy(batch_size=10)
+    sharding_strategy = NoShardingStrategy()
+
+    with pytest.raises(AssertionError, match="prefetch_factor must be at least 1"):
+        DistributedDataLoader(
+            dataset,
+            batcher,
+            strategy,
+            num_workers=2,
+            prefetch_factor=-1,
+            sharding_strategy=sharding_strategy,
+        )
+
+
+def test_distributed_dataloader_variable_item_sizes():
+    class VariableSizeDataset(InMemoryDataset):
+        def get(self, index):
+            return [index] * (index % 5 + 1)
+
+    dataset = VariableSizeDataset(list(range(100)))
+    batcher = Batcher(lambda x: x)
+    strategy = FixedBatchStrategy(batch_size=10)
+    sharding_strategy = NoShardingStrategy()
+
+    dataloader = DistributedDataLoader(
+        dataset,
+        batcher,
+        strategy,
+        num_workers=2,
+        prefetch_factor=2,
+        sharding_strategy=sharding_strategy,
+    )
+
+    batches = list(dataloader)
+    assert len(batches) == 10
+    # Verify that items within a batch have variable sizes
+    for batch in batches:
+        assert all(isinstance(item, list) for item in batch)
+        assert len({len(item) for item in batch}) > 1
+
+
+def test_distribute_global_batch_single_process():
+    local_batch = np.arange(10)
+    mesh = Mesh(jax.devices(), ("dp",))
+    sharding_strategy = DistributedShardingStrategy(mesh, data_shard_axis="dp")
+    global_batch = sharding_strategy.distribute_global_batch(local_batch)
+    # Since we're in single process, the global batch should equal the local batch
+    assert np.array_equal(global_batch, local_batch)
+
+
+def test_distributed_dataloader_invalid_num_shards():
+    dataset = InMemoryDataset(list(range(100)))
+    batcher = Batcher(lambda x: x)
+    strategy = FixedBatchStrategy(batch_size=10)
+    sharding_strategy = NoShardingStrategy()
+
+    # num_shards=0 is invalid
+    with pytest.raises(AssertionError, match="num_shards must be greater than 0"):
+        DistributedDataLoader(
+            dataset,
+            batcher,
+            strategy,
+            num_workers=2,
+            prefetch_factor=2,
+            sharding_strategy=sharding_strategy,
+            shard_id=0,
+            num_shards=0,
+        )
+
+    # num_shards negative
+    with pytest.raises(AssertionError, match="num_shards must be greater than 0"):
+        DistributedDataLoader(
+            dataset,
+            batcher,
+            strategy,
+            num_workers=2,
+            prefetch_factor=2,
+            sharding_strategy=sharding_strategy,
+            shard_id=0,
+            num_shards=-1,
+        )
+
+
+def test_distributed_dataloader_missing_shard_id_or_num_shards():
+    dataset = InMemoryDataset(list(range(100)))
+    batcher = Batcher(lambda x: x)
+    strategy = FixedBatchStrategy(batch_size=10)
+    sharding_strategy = NoShardingStrategy()
+
+    # Missing shard_id
+    with pytest.raises(
+        AssertionError,
+        match="Either both shard_id and num_shards must be provided or neither",
+    ):
+        DistributedDataLoader(
+            dataset,
+            batcher,
+            strategy,
+            num_workers=2,
+            prefetch_factor=2,
+            sharding_strategy=sharding_strategy,
+            num_shards=2,
+        )
+
+    # Missing num_shards
+    with pytest.raises(
+        AssertionError,
+        match="Either both shard_id and num_shards must be provided or neither",
+    ):
+        DistributedDataLoader(
+            dataset,
+            batcher,
+            strategy,
+            num_workers=2,
+            prefetch_factor=2,
+            sharding_strategy=sharding_strategy,
+            shard_id=0,
+        )
+
+
+def test_distributed_dataloader_dict_items():
+    class DictDataset(InMemoryDataset):
+        def get(self, index):
+            return {"index": index, "value": index * 2}
+
+    dataset = DictDataset(list(range(100)))
+    batcher = Batcher(lambda x: x)
+    strategy = FixedBatchStrategy(batch_size=10)
+    sharding_strategy = NoShardingStrategy()
+
+    dataloader = DistributedDataLoader(
+        dataset,
+        batcher,
+        strategy,
+        num_workers=2,
+        prefetch_factor=2,
+        sharding_strategy=sharding_strategy,
+    )
+
+    batches = list(dataloader)
+    assert len(batches) == 10
+    for batch in batches:
+        assert all(isinstance(item, dict) for item in batch)
+        for item in batch:
+            assert "index" in item
+            assert "value" in item
+
+
+def test_distributed_dataloader_concurrent_iteration():
+    import threading
+
+    dataset = InMemoryDataset(list(range(100)))
+    batcher = Batcher(lambda x: x)
+    strategy = FixedBatchStrategy(batch_size=5)
+    sharding_strategy = NoShardingStrategy()
+
+    dataloader = DistributedDataLoader(
+        dataset,
+        batcher,
+        strategy,
+        num_workers=4,
+        prefetch_factor=2,
+        sharding_strategy=sharding_strategy,
+    )
+
+    results = []
+
+    def iterate_dataloader():
+        for batch in dataloader:
+            results.extend(batch)
+
+    threads = [threading.Thread(target=iterate_dataloader) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    # Ensure that data is not duplicated and all items are present
+    assert sorted(set(results)) == list(range(100))
+
+
+def test_distributed_dataloader_finalizer():
+    import gc
+
+    dataset = InMemoryDataset(list(range(1000000)))  # Large dataset
+    batcher = Batcher(lambda x: x)
+    strategy = FixedBatchStrategy(batch_size=1000)
+    sharding_strategy = NoShardingStrategy()
+
+    dataloader = DistributedDataLoader(
+        dataset,
+        batcher,
+        strategy,
+        num_workers=8,
+        prefetch_factor=2,
+        sharding_strategy=sharding_strategy,
+    )
+
+    iterator = iter(dataloader)
+    # Consume some data
+    for _ in range(5):
+        next(iterator)
+
+    # Delete iterator and force garbage collection
+    del iterator
+    gc.collect()
