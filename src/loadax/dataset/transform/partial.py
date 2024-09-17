@@ -72,13 +72,13 @@ class PartialDataset(Dataset[DatasetItem]):
         total_len = len(dataset)
         batch_size = total_len // num_parts
         remainder = total_len % num_parts
-        datasets = []
+        datasets: list[Dataset[DatasetItem]] = []
 
         current = 0
         for i in range(num_parts):
             start = current
             end = start + batch_size + (1 if i < remainder else 0)
-            datasets.append(PartialDataset(dataset, start, end))
+            datasets.append(PartialDataset[DatasetItem](dataset, start, end))
             current = end
 
         return datasets

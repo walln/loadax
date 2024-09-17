@@ -116,6 +116,8 @@ nav:
               - PartialDataset: api/dataset/transformations/partial.md
               - SampledDataset: api/dataset/transformations/sampled.md
               - ShuffledDataset: api/dataset/transformations/shuffled.md
+          - Integrations:
+              - HuggingFace: api/dataset/integration/huggingface.md
 
 watch:
   - src/
