@@ -28,3 +28,6 @@ jobs:
 
             - name: Publish
               run: uvx twine upload dist/*
+              env: 
+                TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
+                TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
