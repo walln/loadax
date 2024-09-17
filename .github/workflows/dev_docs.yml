@@ -1,0 +1,33 @@
+name: Build Docs
+on:
+    push:
+        branches:
+        - main
+
+permissions: 
+    contents: write
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0
+
+            - name: Install the latest version of uv
+              uses: astral-sh/setup-uv@v2
+              with:
+                version: "latest"
+                enable-cache: true
+            
+            - name: Sync Deps
+              run: uv sync
+
+            - name: Setup Docs Deploy
+              run: |
+                  git config --global user.name "github-actions[bot]"
+                  git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            
+            - name: Build Docs
+              run: uv run mike deploy --push develop

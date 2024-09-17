@@ -3,13 +3,13 @@ repos:
     hooks:
       - id: lint
         name: lint
-        entry: rye lint
+        entry: uvx ruff check
         language: system
         types: [python]
         pass_filenames: false
       - id: format
         name: format
-        entry: rye format --check
+        entry: uvx ruff format --check
         language: system
         types: [python]
         pass_filenames: false

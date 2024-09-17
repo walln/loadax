@@ -18,10 +18,20 @@ class DatasetIterator(ABC, Generic[DatasetItem]):
     tracking the state of the iteration.
 
     Example:
-        >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-        >>> iterator = iter(dataset)
-        >>> for item in iterator:
-        ...     print(item)
+        ```python
+        from loadax import InMemoryDataset
+
+        dataset = InMemoryDataset([1, 2, 3, 4, 5])
+        iterator = iter(dataset)
+        for item in iterator:
+            print(item)
+
+        #> 1
+        #> 2
+        #> 3
+        #> 4
+        #> 5
+        ```
 
     Attributes:
         dataset (Dataset): The dataset to iterate over.
@@ -35,10 +45,20 @@ class DatasetIterator(ABC, Generic[DatasetItem]):
         tracking the state of the iteration.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> iterator = iter(dataset)
-            >>> for item in iterator:
-            ...     print(item)
+            ```python
+            from loadax import InMemoryDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            iterator = iter(dataset)
+            for item in iterator:
+                print(item)
+
+            #> 1
+            #> 2
+            #> 3
+            #> 4
+            #> 5
+            ```
 
         Args:
             dataset (Dataset): The dataset to iterate over.
@@ -53,9 +73,15 @@ class DatasetIterator(ABC, Generic[DatasetItem]):
         end of the dataset, it returns None.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> iterator = iter(dataset)
-            >>> print(next(iterator))
+            ```python
+            from loadax import InMemoryDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            iterator = iter(dataset)
+            print(next(iterator))
+
+            #> 1
+            ```
 
         Returns:
             DatasetItem | None: The next item in the dataset, or None if the iterator
@@ -74,8 +100,14 @@ class Dataset(ABC, Generic[DatasetItem]):
     to get an item at a given index, as well as the ability to iterate over the dataset.
 
     Example:
-        >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-        >>> print(dataset.get(0))
+        ```python
+        from loadax import InMemoryDataset
+
+        dataset = InMemoryDataset([1, 2, 3, 4, 5])
+        print(dataset.get(0))
+
+        #> 1
+        ```
 
     Attributes:
         dataset (Dataset): The dataset to iterate over.
@@ -91,11 +123,14 @@ class Dataset(ABC, Generic[DatasetItem]):
         the dataset.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> print(dataset.get(0))
+            ```python
+            from loadax import InMemoryDataset
 
-        Args:
-            dataset (Dataset): The dataset to iterate over.
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            print(dataset.get(0))
+
+            #> 1
+            ```
         """
         raise NotImplementedError
 
@@ -108,8 +143,14 @@ class Dataset(ABC, Generic[DatasetItem]):
         If the index is out of bounds, it returns None.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> print(dataset.get(0))
+            ```python
+            from loadax import InMemoryDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            print(dataset.get(0))
+
+            #> 1
+            ```
 
         Args:
             index (int): The index of the item to get.
@@ -126,8 +167,14 @@ class Dataset(ABC, Generic[DatasetItem]):
         This method returns True if the dataset is empty, and False otherwise.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> print(dataset.is_empty())
+            ```python
+            from loadax import InMemoryDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            print(dataset.is_empty())
+
+            #> False
+            ```
 
         Returns:
             bool: True if the dataset is empty, and False otherwise.
@@ -141,10 +188,20 @@ class Dataset(ABC, Generic[DatasetItem]):
         for tracking the state of the iteration.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> iterator = iter(dataset)
-            >>> for item in iterator:
-            ...     print(item)
+            ```python
+            from loadax import InMemoryDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            iterator = iter(dataset)
+            for item in iterator:
+                print(item)
+
+            #> 1
+            #> 2
+            #> 3
+            #> 4
+            #> 5
+            ```
 
         Returns:
             DatasetIterator[DatasetItem]: The iterator for the dataset.
@@ -159,8 +216,14 @@ class Dataset(ABC, Generic[DatasetItem]):
         on the implementation of the dataset.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> print(len(dataset))
+            ```python
+            from loadax import InMemoryDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            print(len(dataset))
+
+            #> 5
+            ```
 
         Returns:
             int: The length of the dataset.

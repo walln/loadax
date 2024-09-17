@@ -19,10 +19,13 @@ class CombinedDataset(Dataset[DatasetItem]):
         `SampledDatasetWithoutReplacement` or `SampledDatasetWithReplacement`.
 
         Example:
-            >>> dataset1 = InMemoryDataset([1, 2, 3])
-            >>> dataset2 = InMemoryDataset([4, 5, 6])
-            >>> combined_dataset = CombinedDataset([dataset1, dataset2])
-            >>> print(combined_dataset.get(0))
+            ```python
+            from loadax import CombinedDataset, InMemoryDataset
+
+            dataset1 = InMemoryDataset([1, 2, 3])
+            dataset2 = InMemoryDataset([4, 5, 6])
+            combined_dataset = CombinedDataset([dataset1, dataset2])
+            ```
 
         Args:
             datasets (list[Dataset]): The datasets to combine.
@@ -33,10 +36,15 @@ class CombinedDataset(Dataset[DatasetItem]):
         """Get the item at the given index.
 
         Example:
-            >>> dataset1 = InMemoryDataset([1, 2, 3])
-            >>> dataset2 = InMemoryDataset([4, 5, 6])
-            >>> combined_dataset = CombinedDataset([dataset1, dataset2])
-            >>> print(combined_dataset.get(0))
+            ```python
+            from loadax import CombinedDataset, InMemoryDataset
+
+            dataset1 = InMemoryDataset([1, 2, 3])
+            dataset2 = InMemoryDataset([4, 5, 6])
+            combined_dataset = CombinedDataset([dataset1, dataset2])
+            print(combined_dataset.get(0))
+            #> 1
+            ```
 
         Args:
             index (int): The index of the item to get.
@@ -59,10 +67,15 @@ class CombinedDataset(Dataset[DatasetItem]):
         of the individual datasets.
 
         Example:
-            >>> dataset1 = InMemoryDataset([1, 2, 3])
-            >>> dataset2 = InMemoryDataset([4, 5, 6])
-            >>> combined_dataset = CombinedDataset([dataset1, dataset2])
-            >>> print(len(combined_dataset))
+            ```python
+            from loadax import CombinedDataset, InMemoryDataset
+
+            dataset1 = InMemoryDataset([1, 2, 3])
+            dataset2 = InMemoryDataset([4, 5, 6])
+            combined_dataset = CombinedDataset([dataset1, dataset2])
+            print(len(combined_dataset))
+            #> 6
+            ```
 
         Returns:
             int: The length of the dataset.
@@ -73,10 +86,16 @@ class CombinedDataset(Dataset[DatasetItem]):
         """Get a string representation of the dataset.
 
         Example:
-            >>> dataset1 = InMemoryDataset([1, 2, 3])
-            >>> dataset2 = InMemoryDataset([4, 5, 6])
-            >>> combined_dataset = CombinedDataset([dataset1, dataset2])
-            >>> print(repr(combined_dataset))
+            ```python
+            from loadax import CombinedDataset, InMemoryDataset
+
+            dataset1 = InMemoryDataset([1, 2, 3])
+            dataset2 = InMemoryDataset([4, 5, 6])
+            combined_dataset = CombinedDataset([dataset1, dataset2])
+            print(repr(combined_dataset))
+            #> CombinedDataset(datasets=[InMemoryDataset(items=[1, 2, 3]),
+                                         InMemoryDataset(items=[4, 5, 6])])
+            ```
 
         Returns:
             str: The string representation of the dataset.

@@ -23,9 +23,14 @@ class ShuffledDataset(Dataset[DatasetItem]):
     means that shuffling is not IO bound as the indices can be stored in memory.
 
     Example:
-        >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-        >>> shuffled_dataset = ShuffledDataset(dataset)
-        >>> print(shuffled_dataset.get(0))
+        ```python
+        import jax
+        from loadax import ShuffledDataset, InMemoryDataset
+
+        dataset = InMemoryDataset([1, 2, 3, 4, 5])
+        key = jax.random.PRNGKey(0)
+        shuffled_dataset = ShuffledDataset(dataset, key)
+        ```
 
     Attributes:
         dataset (Dataset): The underlying dataset to shuffle.
@@ -45,10 +50,14 @@ class ShuffledDataset(Dataset[DatasetItem]):
         means that shuffling is not IO bound as the indices can be stored in memory.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> key = jax.random.PRNGKey(0)
-            >>> shuffled_dataset = ShuffledDataset(dataset, key)
-            >>> print(shuffled_dataset.get(0))
+            ```python
+            import jax
+            from loadax import ShuffledDataset, InMemoryDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            key = jax.random.PRNGKey(0)
+            shuffled_dataset = ShuffledDataset(dataset, key)
+            ```
 
         Args:
             dataset (Dataset): The dataset to shuffle.
@@ -65,9 +74,16 @@ class ShuffledDataset(Dataset[DatasetItem]):
         dataset.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> shuffled_dataset = ShuffledDataset(dataset)
-            >>> print(len(shuffled_dataset))
+            ```python
+            import jax
+            from loadax import ShuffledDataset, InMemoryDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            key = jax.random.PRNGKey(0)
+            shuffled_dataset = ShuffledDataset(dataset, key)
+            print(len(shuffled_dataset))
+            #> 5
+            ```
 
         Returns:
             int: The length of the dataset.
@@ -82,9 +98,16 @@ class ShuffledDataset(Dataset[DatasetItem]):
         If the index is out of bounds, it returns None.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> shuffled_dataset = ShuffledDataset(dataset)
-            >>> print(shuffled_dataset.get(0))
+            ```python
+            import jax
+            from loadax import ShuffledDataset, InMemoryDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            key = jax.random.PRNGKey(0)
+            shuffled_dataset = ShuffledDataset(dataset, key)
+            print(shuffled_dataset.get(0))
+            #> 3
+            ```
 
         Args:
             index (int): The index of the item to get.
@@ -99,11 +122,6 @@ class ShuffledDataset(Dataset[DatasetItem]):
 
     def __repr__(self) -> str:
         """Get a string representation of the dataset.
-
-        Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> shuffled_dataset = ShuffledDataset(dataset)
-            >>> print(repr(shuffled_dataset))
 
         Returns:
             str: The string representation of the dataset.

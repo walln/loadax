@@ -8,7 +8,16 @@ from loadax.batcher import Batcher as Batcher
 
 # Dataloader builder is exposed as a top level import, individual loaders can be
 # imported from loadax.dataloader if needed.
-from loadax.dataloader import DataLoader as DataLoader
+from loadax.dataloader import Dataloader as Dataloader
+from loadax.dataloader import DataloaderBuilder as DataloaderBuilder
+from loadax.dataloader import NaiveDataloader as NaiveDataloader
+
+# Sharding Configurations
+from loadax.dataloader.sharding import (
+    DistributedShardingStrategy as DistributedShardingStrategy,
+)
+from loadax.dataloader.sharding import NoShardingStrategy as NoShardingStrategy
+from loadax.dataloader.sharding import ShardingStrategy as ShardingStrategy
 
 ## Datasets
 # All dataset types are exposed as top level imports.
@@ -33,3 +42,7 @@ from loadax.dataset.transform import (
     SampledDatasetWithReplacement as SampledDatasetWithReplacement,
 )
 from loadax.dataset.transform import ShuffledDataset as ShuffledDataset
+
+## Sharding Presets
+from loadax.sharding_utilities import ddp_sharding as ddp_sharding
+from loadax.sharding_utilities import fsdp_sharding as fsdp_sharding

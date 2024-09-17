@@ -9,13 +9,13 @@ readme = "README.md"
 license = { file = "LICENSE" }
 
 dependencies = ["jax>=0.4.15", "flax>=0.9.0", "optax>=0.2.3"]
-requires-python = ">= 3.8"
+requires-python = ">= 3.10"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.rye]
+[tool.uv]
 managed = true
 dev-dependencies = [
     "pytest>=8.3.2",
@@ -23,6 +23,11 @@ dev-dependencies = [
     "pre-commit>=3.8.0",
     "pyright>=1.1.376",
     "mypy>=1.11.1",
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.5.34",
+    "mike>=2.1.3",
+    "mkdocs-exclude>=1.0.2",
+    "mkdocstrings-python>=1.11.1",
 ]
 
 [tool.hatch.metadata]

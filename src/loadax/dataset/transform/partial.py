@@ -20,9 +20,12 @@ class PartialDataset(Dataset[DatasetItem]):
         subset is defined by the start and end indices.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> partial_dataset = PartialDataset(dataset, 1, 4)
-            >>> print(partial_dataset.get(0))
+            ```python
+            from loadax import InMemoryDataset, PartialDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            partial_dataset = PartialDataset(dataset, 1, 4)
+            ```
 
         Args:
             dataset (Dataset): The dataset to create the partial subset from.
@@ -45,9 +48,19 @@ class PartialDataset(Dataset[DatasetItem]):
         by the number of parts.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> partial_datasets = PartialDataset.split(dataset, 3)
-            >>> print(len(partial_datasets))
+            ```python
+            from loadax import InMemoryDataset, PartialDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            partial_datasets = PartialDataset.split(dataset, 3)
+
+            for partial_dataset in partial_datasets:
+                print(partial_dataset.get(0))
+
+            #> 1
+            #> 3
+            #> 5
+            ```
 
         Args:
             dataset (Dataset): The dataset to split.
@@ -78,9 +91,15 @@ class PartialDataset(Dataset[DatasetItem]):
         If the index is out of bounds, it returns None.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> partial_dataset = PartialDataset(dataset, 1, 4)
-            >>> print(partial_dataset.get(0))
+            ```python
+            from loadax import InMemoryDataset, PartialDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            partial_dataset = PartialDataset(dataset, 1, 4)
+            print(partial_dataset.get(0))
+
+            #> 2
+            ```
 
         Args:
             index (int): The index of the item to get.
@@ -102,9 +121,15 @@ class PartialDataset(Dataset[DatasetItem]):
         and end indices.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> partial_dataset = PartialDataset(dataset, 1, 4)
-            >>> print(len(partial_dataset))
+            ```python
+            from loadax import InMemoryDataset, PartialDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            partial_dataset = PartialDataset(dataset, 1, 4)
+            print(len(partial_dataset))
+
+            #> 3
+            ```
 
         Returns:
             int: The length of the dataset.

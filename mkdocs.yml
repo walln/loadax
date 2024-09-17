@@ -1,0 +1,121 @@
+site_name: Loadax Documentation
+theme:
+  name: material
+  custom_dir: docs/theme
+  palette:
+    - scheme: default
+      media: "(prefers-color-scheme: light)"
+      primary: pink
+      accent: pink
+      toggle:
+        icon: material/lightbulb-outline
+        name: "Switch to dark mode"
+    - scheme: slate
+      media: "(prefers-color-scheme: dark)"
+      primary: pink
+      accent: pink
+      toggle:
+        icon: material/lightbulb
+        name: "Switch to light mode"
+  features:
+    - content.tabs.link
+    - content.code.annotate
+    - content.code.copy
+    - announce.dismiss
+    - navigation.tabs
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.preview
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.top
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - toc.follow
+
+repo_name: walln/loadax
+repo_url: https://github.com/walln/loadax
+edit_uri: edit/main/docs/
+
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true
+      title: "On this page"
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      pygments_lang_class: true
+  - pymdownx.extra
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra:
+  version:
+    provider: mike
+
+plugins:
+  - mike:
+      alias_type: symlink
+      canonical_version: latest
+  - search
+  - exclude:
+      glob:
+      - __pycache__/*
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            members_order: source
+            separate_signature: true
+            filters: ["!^_"]
+            docstring_options:
+              ignore_init_summary: true
+            merge_init_into_class: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+            # extensions:
+            #  -  docs/plugins/griffe_doclinks.py
+          import:
+            - url: https://docs.python.org/3/objects.inv
+              domains: [py, std]
+
+
+nav:
+  - Getting Started:
+      - Welcome to Loadax: index.md
+      - Multi-Host Training: multi-host.md
+      - Roadmap: roadmap.md
+  - API Documentation:
+      - Dataloader:
+          - Dataloader Builder: api/builder.md
+          - Dataloader: api/loader.md
+          - Naive Dataloader: api/naive.md
+          - Utilties: 
+              - Progress: api/progress.md
+      - Batching Strategies:
+          - Batch Strategy: api/strategy/batch.md
+          - Fixed Batch Strategy: api/strategy/fixed.md
+      - Sharding:
+          - Sharding Strategy: api/sharding/sharding-strategy.md
+          - Presets: api/sharding/presets.md
+      - Datasets:
+          - Dataset: api/dataset/dataset.md
+          - InMemoryDataset: api/dataset/in-memory.md
+          - RangeDataset: api/dataset/range.md
+          - Transformations:
+              - MappedDataset: api/dataset/transformations/mapped.md
+              - CombinedDataset: api/dataset/transformations/combined.md
+              - PartialDataset: api/dataset/transformations/partial.md
+              - SampledDataset: api/dataset/transformations/sampled.md
+              - ShuffledDataset: api/dataset/transformations/shuffled.md
+
+watch:
+  - src/
