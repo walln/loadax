@@ -1,8 +1,16 @@
 {% extends "base.html" %}
+<!-- version handling -->
+<!-- {% block outdated %}
+You're not viewing the latest version.
+<a href="{{ '../' ~ base_url }}">
+    <strong>Click here to go to latest.</strong>
+</a>
+{% endblock %} -->
+<!-- end version handling -->
 <!-- start announce -->
-{% block announce %}
+<!-- {% block announce %}
 {% include 'announce.html' ignore missing %}
-{% endblock %}
+{% endblock %} -->
 <!-- end announce -->
 {% block content %}
 {{ super() }}

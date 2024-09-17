@@ -1,4 +1,7 @@
 site_name: Loadax Documentation
+site_url: https://walln.github.io/loadax/
+site_author: Nick Wall
+
 theme:
   name: material
   custom_dir: docs/theme
