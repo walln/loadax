@@ -1,6 +1,6 @@
 [project]
 name = "loadax"
-version = "0.1.1"
+version = "0.2.0"
 description = "Dataloading for Jax"
 authors = [
     { name = "Nick Wall", email = "46641379+walln@users.noreply.github.com" },
