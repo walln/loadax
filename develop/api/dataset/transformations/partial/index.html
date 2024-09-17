@@ -1193,6 +1193,77 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_4_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_5" id="__nav_2_4_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Integrations
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            Integrations
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/huggingface/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    HuggingFace
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1631,13 +1702,13 @@ by the number of parts.</p>
     <span class="n">total_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
     <span class="n">batch_size</span> <span class="o">=</span> <span class="n">total_len</span> <span class="o">//</span> <span class="n">num_parts</span>
     <span class="n">remainder</span> <span class="o">=</span> <span class="n">total_len</span> <span class="o">%</span> <span class="n">num_parts</span>
-    <span class="n">datasets</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">datasets</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Dataset</span><span class="p">[</span><span class="n">DatasetItem</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="n">current</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_parts</span><span class="p">):</span>
         <span class="n">start</span> <span class="o">=</span> <span class="n">current</span>
         <span class="n">end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">batch_size</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">remainder</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="n">datasets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PartialDataset</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+        <span class="n">datasets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PartialDataset</span><span class="p">[</span><span class="n">DatasetItem</span><span class="p">](</span><span class="n">dataset</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
         <span class="n">current</span> <span class="o">=</span> <span class="n">end</span>
 
     <span class="k">return</span> <span class="n">datasets</span>
