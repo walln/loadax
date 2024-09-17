@@ -1,0 +1,36 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    pull_request: 
+        branches: [main]
+
+jobs:
+    quality-check:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Install the latest version of uv
+              uses: astral-sh/setup-uv@v2
+              with:
+                version: "latest"
+                enable-cache: true
+
+            - name: Sync Deps
+              run: uv sync
+
+            - name: Lint
+              run: uv run ruff check
+            
+            - name: Format
+              run: uv run ruff format --check
+            
+            - name: Type Check
+              run: uv run mypy src
+
+            - name: Test
+              run: uv run pytest
+            
+            

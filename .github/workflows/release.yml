@@ -1,0 +1,33 @@
+# Release a new version of the project to PyPI
+# To trigger this workflow manually, run the following command:
+# gh workflow run release.yml -f tag=v1.0.0
+# or git tag 1.0.0 && git push origin --tags
+
+name: Publish Release
+
+on:
+    push:
+        tags:
+            - '*'
+
+jobs:
+    build-and-publish:
+        name: Build and publish
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Install the latest version of uv
+              uses: astral-sh/setup-uv@v2
+              with:
+                version: "latest"
+                enable-cache: true
+
+            - name: Sync Deps
+              run: uv sync
+              
+            - name: Build
+              run: uv build
+
+            - name: Publish
+              run: uvx twine upload dist
