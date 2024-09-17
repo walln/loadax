@@ -1,6 +1,6 @@
 # Loadax
 
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/walln/loadax/ci)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/walln/loadax/ci.yml)
 ![PyPI - Status](https://img.shields.io/pypi/status/loadax)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/loadax)
 ![GitHub License](https://img.shields.io/github/license/walln/loadax)
