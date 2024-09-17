@@ -27,9 +27,14 @@ class SampledDatasetWithoutReplacement(Dataset[DatasetItem]):
     that sampling is not IO bound as the indices can be stored in memory.
 
     Example:
-        >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-        >>> sampled_dataset = SampledDatasetWithoutReplacement(dataset, 3)
-        >>> print(sampled_dataset.get(0))
+        ```python
+        import jax
+        from loadax import SampledDatasetWithoutReplacement, InMemoryDataset
+
+        dataset = InMemoryDataset([1, 2, 3, 4, 5])
+        key = jax.random.PRNGKey(0)
+        sampled_dataset = SampledDatasetWithoutReplacement(dataset, 3, key)
+        ```
 
     Attributes:
         dataset (Dataset): The underlying dataset to sample from.
@@ -55,10 +60,14 @@ class SampledDatasetWithoutReplacement(Dataset[DatasetItem]):
         means that sampling is not IO bound as the indices can be stored in memory.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> key = jax.random.PRNGKey(0)
-            >>> sampled_dataset = SampledDatasetWithoutReplacement(dataset, 3, key)
-            >>> print(sampled_dataset.get(0))
+            ```python
+            import jax
+            from loadax import SampledDatasetWithoutReplacement, InMemoryDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            key = jax.random.PRNGKey(0)
+            sampled_dataset = SampledDatasetWithoutReplacement(dataset, 3, key)
+            ```
 
         Args:
             dataset (Dataset): The dataset to sample from.
@@ -76,10 +85,16 @@ class SampledDatasetWithoutReplacement(Dataset[DatasetItem]):
         In the case of a sampled dataset, the length is the sample size.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> key = jax.random.PRNGKey(0)
-            >>> sampled_dataset = SampledDatasetWithoutReplacement(dataset, 3, key)
-            >>> print(len(sampled_dataset))
+            ```python
+            import jax
+            from loadax import SampledDatasetWithoutReplacement, InMemoryDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            key = jax.random.PRNGKey(0)
+            sampled_dataset = SampledDatasetWithoutReplacement(dataset, 3, key)
+            print(len(sampled_dataset))
+            #> 3
+            ```
 
         Returns:
             int: The length of the dataset.
@@ -101,9 +116,14 @@ class SampledDatasetWithoutReplacement(Dataset[DatasetItem]):
         If the index is out of bounds, it returns None.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> sampled_dataset = SampledDatasetWithoutReplacement(dataset, 3)
-            >>> print(sampled_dataset.get(0))
+            ```python
+            import jax
+            from loadax import SampledDatasetWithoutReplacement, InMemoryDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            key = jax.random.PRNGKey(0)
+            sampled_dataset = SampledDatasetWithoutReplacement(dataset, 3, key)
+            ```
 
         Args:
             index (int): The index of the item to get.
@@ -129,9 +149,14 @@ class SampledDatasetWithReplacement(Dataset[DatasetItem]):
     this should not be necessary.
 
     Example:
-        >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-        >>> sampled_dataset = SampledDatasetWithReplacement(dataset, 3)
-        >>> print(sampled_dataset.get(0))
+        ```python
+        import jax
+        from loadax import SampledDatasetWithReplacement, InMemoryDataset
+
+        dataset = InMemoryDataset([1, 2, 3, 4, 5])
+        key = jax.random.PRNGKey(0)
+        sampled_dataset = SampledDatasetWithReplacement(dataset, 3, key)
+        ```
 
     Attributes:
         dataset (Dataset): The underlying dataset to sample from.
@@ -150,10 +175,14 @@ class SampledDatasetWithReplacement(Dataset[DatasetItem]):
         cases, this should not be necessary.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> key = jax.random.PRNGKey(0)
-            >>> sampled_dataset = SampledDatasetWithReplacement(dataset, 3, key)
-            >>> print(sampled_dataset.get(0))
+            ```python
+            import jax
+            from loadax import SampledDatasetWithReplacement, InMemoryDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            key = jax.random.PRNGKey(0)
+            sampled_dataset = SampledDatasetWithReplacement(dataset, 3, key)
+            ```
 
         Args:
             dataset (Dataset): The dataset to sample from.
@@ -170,9 +199,16 @@ class SampledDatasetWithReplacement(Dataset[DatasetItem]):
         In the case of a sampled dataset, the length is the sample size.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> sampled_dataset = SampledDatasetWithReplacement(dataset, 3)
-            >>> print(len(sampled_dataset))
+            ```python
+            import jax
+            from loadax import SampledDatasetWithReplacement, InMemoryDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            key = jax.random.PRNGKey(0)
+            sampled_dataset = SampledDatasetWithReplacement(dataset, 3, key)
+            print(len(sampled_dataset))
+            #> 3
+            ```
 
         Returns:
             int: The length of the dataset.
@@ -187,10 +223,16 @@ class SampledDatasetWithReplacement(Dataset[DatasetItem]):
         If the index is out of bounds, it returns None.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> key = jax.random.PRNGKey(0)
-            >>> sampled_dataset = SampledDatasetWithReplacement(dataset, 3, key)
-            >>> print(sampled_dataset.get(0))
+            ```python
+            import jax
+            from loadax import SampledDatasetWithReplacement, InMemoryDataset
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            key = jax.random.PRNGKey(0)
+            sampled_dataset = SampledDatasetWithReplacement(dataset, 3, key)
+            print(sampled_dataset.get(0))
+            #> 1
+            ```
 
         Args:
             index (int): The index of the item to get.

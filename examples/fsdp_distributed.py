@@ -19,15 +19,13 @@ behind distributed training.
 """
 
 from dataclasses import dataclass
-from typing import Callable
 import jax
 import jax.experimental
 import jax.experimental.mesh_utils
 import jax.experimental.multihost_utils
 import jax.numpy as jnp
-from jax.sharding import Mesh, NamedSharding, PartitionSpec
 import numpy as np
-from loadax.dataloader.distributed import DistributedDataLoader
+from loadax.dataloader.loader import Dataloader
 from loadax.dataloader.sharding import DistributedShardingStrategy
 from loadax import InMemoryDataset, Batcher
 from loadax.strategy import FixedBatchStrategy
@@ -111,7 +109,7 @@ def train_step(model: Model, optimizer: nnx.Optimizer, metrics: nnx.MultiMetric,
     metrics.update(loss=loss)
 
 def test_distributed_dataloader_with_parameter_sharding():
-    dataloader = DistributedDataLoader(
+    dataloader = Dataloader(
         dataset=dataset,
         batcher=batcher,
         strategy=batch_strategy,

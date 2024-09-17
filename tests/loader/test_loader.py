@@ -3,8 +3,9 @@ import numpy as np
 import pytest
 from jax.sharding import Mesh, PartitionSpec
 
-from loadax import Batcher, DataLoader
-from loadax.dataloader.distributed import DistributedDataLoader
+from loadax import Batcher
+from loadax.dataloader.builder import DataloaderBuilder
+from loadax.dataloader.loader import Dataloader
 from loadax.dataloader.sharding import DistributedShardingStrategy, NoShardingStrategy
 from loadax.dataset.in_memory import InMemoryDataset
 from loadax.strategy import FixedBatchStrategy
@@ -17,7 +18,7 @@ def test_distributed_dataloader_single_shard():
     mesh = Mesh(jax.devices(), ("dp",))
     sharding_strategy = DistributedShardingStrategy(mesh, PartitionSpec("dp"))
 
-    dataloader = DistributedDataLoader(
+    dataloader = Dataloader(
         dataset,
         batcher,
         strategy,
@@ -41,7 +42,7 @@ def test_distributed_dataloader_multiple_shards():
     mesh = Mesh(jax.devices(), ("dp",))
     sharding_strategy = DistributedShardingStrategy(mesh, PartitionSpec("dp"))
 
-    dataloader0 = DistributedDataLoader(
+    dataloader0 = Dataloader(
         dataset,
         batcher,
         strategy,
@@ -52,7 +53,7 @@ def test_distributed_dataloader_multiple_shards():
         num_shards=2,
     )
 
-    dataloader1 = DistributedDataLoader(
+    dataloader1 = Dataloader(
         dataset,
         batcher,
         strategy,
@@ -80,7 +81,7 @@ def test_distributed_dataloader_uneven_batch():
     mesh = Mesh(jax.devices(), ("dp",))
     sharding_strategy = DistributedShardingStrategy(mesh, PartitionSpec("dp"))
 
-    dataloader = DistributedDataLoader(
+    dataloader = Dataloader(
         dataset,
         batcher,
         strategy,
@@ -110,7 +111,7 @@ def test_distributed_dataloader_error_handling():
     mesh = Mesh(jax.devices(), ("dp",))
     sharding_strategy = DistributedShardingStrategy(mesh, PartitionSpec("dp"))
 
-    dataloader = DistributedDataLoader(
+    dataloader = Dataloader(
         dataset,
         batcher,
         strategy,
@@ -135,7 +136,7 @@ def test_distributed_dataloader_progress():
     mesh = Mesh(jax.devices(), ("dp",))
     sharding_strategy = DistributedShardingStrategy(mesh, PartitionSpec("dp"))
 
-    dataloader = DistributedDataLoader(
+    dataloader = Dataloader(
         dataset,
         batcher,
         strategy,
@@ -165,7 +166,7 @@ def create_dataloader(
     mesh = Mesh(jax.devices(), ("dp",))
 
     return (
-        DataLoader(batcher)
+        DataloaderBuilder(batcher)
         .batch_size(batch_size)
         .prefetch(2)
         .shard(mesh, "dp", num_shards, shard_id)
@@ -271,7 +272,7 @@ def test_distributed_dataloader_multiple_shards_four():
 
     total_items = []
     for shard_id in range(4):
-        dataloader = DistributedDataLoader(
+        dataloader = Dataloader(
             dataset,
             batcher,
             strategy,
@@ -302,7 +303,7 @@ def test_distributed_dataloader_uneven_shards():
     for shard_id in range(4):
         batcher = Batcher(lambda x: x)
         strategy = FixedBatchStrategy(batch_size=10)
-        dataloader = DistributedDataLoader(
+        dataloader = Dataloader(
             dataset,
             batcher,
             strategy,
@@ -328,7 +329,7 @@ def test_distributed_dataloader_invalid_shard_id():
     sharding_strategy = NoShardingStrategy()
 
     with pytest.raises(AssertionError, match="shard_id .* must be in the range"):
-        DistributedDataLoader(
+        Dataloader(
             dataset,
             batcher,
             strategy,
@@ -347,7 +348,7 @@ def test_distributed_dataloader_no_workers():
     sharding_strategy = NoShardingStrategy()
 
     with pytest.raises(AssertionError, match="num_workers must be at least 1"):
-        DistributedDataLoader(
+        Dataloader(
             dataset,
             batcher,
             strategy,
@@ -364,7 +365,7 @@ def test_distributed_dataloader_negative_workers():
     sharding_strategy = NoShardingStrategy()
 
     with pytest.raises(AssertionError, match="num_workers must be at least 1"):
-        DistributedDataLoader(
+        Dataloader(
             dataset,
             batcher,
             strategy,
@@ -381,7 +382,7 @@ def test_distributed_dataloader_no_prefetch():
     sharding_strategy = NoShardingStrategy()
 
     with pytest.raises(AssertionError, match="prefetch_factor must be at least 1"):
-        DistributedDataLoader(
+        Dataloader(
             dataset,
             batcher,
             strategy,
@@ -398,7 +399,7 @@ def test_distributed_dataloader_negative_prefetch():
     sharding_strategy = NoShardingStrategy()
 
     with pytest.raises(AssertionError, match="prefetch_factor must be at least 1"):
-        DistributedDataLoader(
+        Dataloader(
             dataset,
             batcher,
             strategy,
@@ -418,7 +419,7 @@ def test_distributed_dataloader_variable_item_sizes():
     strategy = FixedBatchStrategy(batch_size=10)
     sharding_strategy = NoShardingStrategy()
 
-    dataloader = DistributedDataLoader(
+    dataloader = Dataloader(
         dataset,
         batcher,
         strategy,
@@ -452,7 +453,7 @@ def test_distributed_dataloader_invalid_num_shards():
 
     # num_shards=0 is invalid
     with pytest.raises(AssertionError, match="num_shards must be greater than 0"):
-        DistributedDataLoader(
+        Dataloader(
             dataset,
             batcher,
             strategy,
@@ -465,7 +466,7 @@ def test_distributed_dataloader_invalid_num_shards():
 
     # num_shards negative
     with pytest.raises(AssertionError, match="num_shards must be greater than 0"):
-        DistributedDataLoader(
+        Dataloader(
             dataset,
             batcher,
             strategy,
@@ -488,7 +489,7 @@ def test_distributed_dataloader_missing_shard_id_or_num_shards():
         AssertionError,
         match="Either both shard_id and num_shards must be provided or neither",
     ):
-        DistributedDataLoader(
+        Dataloader(
             dataset,
             batcher,
             strategy,
@@ -503,7 +504,7 @@ def test_distributed_dataloader_missing_shard_id_or_num_shards():
         AssertionError,
         match="Either both shard_id and num_shards must be provided or neither",
     ):
-        DistributedDataLoader(
+        Dataloader(
             dataset,
             batcher,
             strategy,
@@ -524,7 +525,7 @@ def test_distributed_dataloader_dict_items():
     strategy = FixedBatchStrategy(batch_size=10)
     sharding_strategy = NoShardingStrategy()
 
-    dataloader = DistributedDataLoader(
+    dataloader = Dataloader(
         dataset,
         batcher,
         strategy,
@@ -550,7 +551,7 @@ def test_distributed_dataloader_concurrent_iteration():
     strategy = FixedBatchStrategy(batch_size=5)
     sharding_strategy = NoShardingStrategy()
 
-    dataloader = DistributedDataLoader(
+    dataloader = Dataloader(
         dataset,
         batcher,
         strategy,
@@ -583,7 +584,7 @@ def test_distributed_dataloader_finalizer():
     strategy = FixedBatchStrategy(batch_size=1000)
     sharding_strategy = NoShardingStrategy()
 
-    dataloader = DistributedDataLoader(
+    dataloader = Dataloader(
         dataset,
         batcher,
         strategy,

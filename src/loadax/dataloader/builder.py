@@ -5,8 +5,7 @@ from typing import Generic, TypeVar
 from jax.sharding import Mesh
 
 from loadax.batcher import Batcher
-from loadax.dataloader.distributed import DistributedDataLoader
-from loadax.dataloader.naive import NaiveDataLoader
+from loadax.dataloader.loader import Dataloader
 from loadax.dataloader.sharding import (
     DistributedShardingStrategy,
     NoShardingStrategy,
@@ -19,7 +18,7 @@ DatasetItem = TypeVar("DatasetItem", covariant=True)
 Batch = TypeVar("Batch", covariant=True)
 
 
-class DataLoader(Generic[DatasetItem, Batch]):
+class DataloaderBuilder(Generic[DatasetItem, Batch]):
     """A dataloader is a primitive for efficiently loading data from a dataset.
 
     A dataloader is effectively a smart iterator that optimizes getting data from the
@@ -33,12 +32,20 @@ class DataLoader(Generic[DatasetItem, Batch]):
     a dataloader with the desired configuration.
 
     Example:
-        >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-        >>> batcher = Batcher(lambda x: x)
-        >>> dataloader = DataLoader(batcher).batch_size(2).build(dataset)
-        >>> iterator = iter(dataloader)
-        >>> for batch in iterator:
-        ...     print(batch)
+        ```python
+        from loadax import DataloaderBuilder, InMemoryDataset, Batcher
+
+        dataset = InMemoryDataset([1, 2, 3, 4, 5])
+        batcher = Batcher(lambda x: x)
+        dataloader = DataloaderBuilder(batcher).batch_size(2).build(dataset)
+        iterator = iter(dataloader)
+        for batch in iterator:
+            print(batch)
+
+        #> [1, 2]
+        #> [3, 4]
+        #> [5]
+        ```
 
     Attributes:
         batcher (Batcher): The batcher to use for batching.
@@ -72,20 +79,12 @@ class DataLoader(Generic[DatasetItem, Batch]):
         methods are designed to be chained in a fluent style, allowing you to build
         a dataloader with the desired configuration.
 
-        Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> batcher = Batcher(lambda x: x)
-            >>> dataloader = DataLoader(batcher).batch_size(2).build(dataset)
-            >>> iterator = iter(dataloader)
-            >>> for batch in iterator:
-            ...     print(batch)
-
         Args:
             batcher (Batcher): The batcher to use for batching.
         """
         self.batcher = batcher
 
-    def batch_size(self, batch_size: int) -> "DataLoader[DatasetItem, Batch]":
+    def batch_size(self, batch_size: int) -> "DataloaderBuilder[DatasetItem, Batch]":
         """Set the batch size for the dataloader.
 
         This method sets the batch size for the dataloader. The batch size is the
@@ -99,23 +98,31 @@ class DataLoader(Generic[DatasetItem, Batch]):
         sizes.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> batcher = Batcher(lambda x: x)
-            >>> dataloader = DataLoader(batcher).batch_size(2).build(dataset)
-            >>> iterator = iter(dataloader)
-            >>> for batch in iterator:
-            ...     print(batch)
+            ```python
+            from loadax import DataloaderBuilder, InMemoryDataset, Batcher
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            batcher = Batcher(lambda x: x)
+            dataloader = DataloaderBuilder(batcher).batch_size(2).build(dataset)
+            iterator = iter(dataloader)
+            for batch in iterator:
+                print(batch)
+
+            #> [1, 2]
+            #> [3, 4]
+            #> [5]
+            ```
 
         Args:
             batch_size (int): The batch size to use for the dataloader.
 
         Returns:
-            DataLoader: The dataloader with the batch size set.
+            Dataloader: The dataloader with the batch size set.
         """
         self.strategy = FixedBatchStrategy(batch_size)
         return self
 
-    def workers(self, num_workers: int) -> "DataLoader[DatasetItem, Batch]":
+    def workers(self, num_workers: int) -> "DataloaderBuilder[DatasetItem, Batch]":
         """Set the number of workers for the dataloader.
 
         This method sets the number of workers for the dataloader. The number of
@@ -124,23 +131,34 @@ class DataLoader(Generic[DatasetItem, Batch]):
         otherwise the dataloader will not be able to prefetch batches efficiently.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> batcher = Batcher(lambda x: x)
-            >>> dataloader = DataLoader(batcher).batch_size(2).workers(2).build(dataset)
-            >>> iterator = iter(dataloader)
-            >>> for batch in iterator:
-            ...     print(batch)
+            ```python
+            from loadax import DataloaderBuilder, InMemoryDataset, Batcher
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            batcher = Batcher(lambda x: x)
+            dataloader = DataloaderBuilder(batcher)
+                            .batch_size(2)
+                            .workers(2)
+                            .build(dataset)
+            iterator = iter(dataloader)
+            for batch in iterator:
+                print(batch)
+
+            #> [1, 2]
+            #> [3, 4]
+            #> [5]
+            ```
 
         Args:
             num_workers (int): The number of workers to use for the dataloader.
 
         Returns:
-            DataLoader: The dataloader with the number of workers set.
+            Dataloader: The dataloader with the number of workers set.
         """
         self.num_workers = num_workers
         return self
 
-    def prefetch(self, factor: int) -> "DataLoader[DatasetItem, Batch]":
+    def prefetch(self, factor: int) -> "DataloaderBuilder[DatasetItem, Batch]":
         """Set the prefetch factor for the dataloader.
 
         This method sets the prefetch factor for the dataloader. The prefetch
@@ -150,21 +168,29 @@ class DataLoader(Generic[DatasetItem, Batch]):
         efficiently.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> batcher = Batcher(lambda x: x)
-            >>> dataloader = DataLoader(batcher)
-            ...                   .batch_size(2)
-            ...                   .prefetch(2)
-            ...                   .build(dataset)
-            >>> iterator = iter(dataloader)
-            >>> for batch in iterator:
-            ...     print(batch)
+            ```python
+            from loadax import DataloaderBuilder, InMemoryDataset, Batcher
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            batcher = Batcher(lambda x: x)
+            dataloader = DataloaderBuilder(batcher)
+                            .batch_size(2)
+                            .prefetch(2)
+                            .build(dataset)
+            iterator = iter(dataloader)
+            for batch in iterator:
+                print(batch)
+
+            #> [1, 2]
+            #> [3, 4]
+            #> [5]
+            ```
 
         Args:
             factor (int): The prefetch factor to use for the dataloader.
 
         Returns:
-            DataLoader: The dataloader with the prefetch factor set.
+            Dataloader: The dataloader with the prefetch factor set.
         """
         self.prefetch_factor = factor if factor > 0 else 1
         return self
@@ -175,7 +201,7 @@ class DataLoader(Generic[DatasetItem, Batch]):
         data_axis_name: str | None = None,
         num_shards: int | None = None,
         shard_id: int | None = None,
-    ) -> "DataLoader[DatasetItem, Batch]":
+    ) -> "DataloaderBuilder[DatasetItem, Batch]":
         """Set the mesh and partition spec for the dataloader.
 
         This will distribute the dataloading across multiple nodes within the same
@@ -184,15 +210,23 @@ class DataLoader(Generic[DatasetItem, Batch]):
         train the model in parallel.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> batcher = Batcher(lambda x: x)
-            >>> dataloader = DataLoader(batcher)
+            ```python
+            from loadax import DataloaderBuilder, InMemoryDataset, Batcher
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            batcher = Batcher(lambda x: x)
+            dataloader = DataloaderBuilder(batcher)
                                 .batch_size(2)
                                 .shard(mesh, data_axis_name='data')
                                 .build(dataset)
-            >>> iterator = iter(dataloader)
-            >>> for batch in iterator:
-            ...     print(batch)
+            iterator = iter(dataloader)
+            for batch in iterator:
+                print(batch)
+
+            #> [1, 2]
+            #> [3, 4]
+            #> [5]
+            ```
 
         Args:
             mesh (Mesh): The mesh to use for sharding.
@@ -205,7 +239,7 @@ class DataLoader(Generic[DatasetItem, Batch]):
                 jax.process_index().
 
         Returns:
-            DataLoader: The dataloader with the mesh and partition spec set.
+            Dataloader: The dataloader with the mesh and partition spec set.
         """
         if num_shards and num_shards <= 1:
             self.sharding_strategy = NoShardingStrategy()
@@ -217,11 +251,7 @@ class DataLoader(Generic[DatasetItem, Batch]):
         self.num_shards = num_shards
         return self
 
-    def build(
-        self, dataset: Dataset[DatasetItem]
-    ) -> (
-        NaiveDataLoader[DatasetItem, Batch] | DistributedDataLoader[DatasetItem, Batch]
-    ):
+    def build(self, dataset: Dataset[DatasetItem]) -> Dataloader[DatasetItem, Batch]:
         """Construct the dataloader from the current configuration.
 
         This method constructs the dataloader from the current configuration. The
@@ -237,22 +267,33 @@ class DataLoader(Generic[DatasetItem, Batch]):
         use cases, unless you have a fast training loop and potentially many devices.
 
         Example:
-            >>> dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            >>> batcher = Batcher(lambda x: x)
-            >>> dataloader = DataLoader(batcher).batch_size(2).workers(2).build(dataset)
-            >>> iterator = iter(dataloader)
-            >>> for batch in iterator:
-            ...     print(batch)
+            ```python
+            from loadax import DataloaderBuilder, InMemoryDataset, Batcher
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            batcher = Batcher(lambda x: x)
+            dataloader = DataloaderBuilder(batcher)
+                            .batch_size(2)
+                            .workers(2)
+                            .build(dataset)
+            iterator = iter(dataloader)
+            for batch in iterator:
+                print(batch)
+
+            #> [1, 2]
+            #> [3, 4]
+            #> [5]
+            ```
 
         Args:
             dataset (Dataset): The dataset to load data from.
 
         Returns:
-            DataLoader: The dataloader constructed from the current configuration.
+            Dataloader: The dataloader constructed from the current configuration.
         """
         strategy = self.strategy if self.strategy else FixedBatchStrategy(1)
 
-        return DistributedDataLoader(
+        return Dataloader(
             dataset=dataset,
             strategy=strategy,
             batcher=self.batcher,

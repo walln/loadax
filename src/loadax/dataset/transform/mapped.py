@@ -1,6 +1,7 @@
 """Dataset that applies a function to the items of another dataset."""
 
-from typing import Callable, TypeVar
+from collections.abc import Callable
+from typing import TypeVar
 
 from loadax.dataset.protocol import Dataset
 

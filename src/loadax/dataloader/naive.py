@@ -4,7 +4,7 @@ from typing import Generic, TypeVar
 
 from loadax.batcher import Batcher
 from loadax.dataloader.progress import Progress
-from loadax.dataloader.protocol import DataLoaderIteratorProtocol, DataLoaderProtocol
+from loadax.dataloader.protocol import DataloaderIteratorProtocol, DataloaderProtocol
 from loadax.dataset import Dataset
 from loadax.strategy import BatchStrategy
 
@@ -12,7 +12,7 @@ DatasetItem = TypeVar("DatasetItem")
 Batch = TypeVar("Batch")
 
 
-class NaiveDataLoaderIterator(DataLoaderIteratorProtocol[DatasetItem, Batch]):
+class NaiveDataloaderIterator(DataloaderIteratorProtocol[DatasetItem, Batch]):
     """An iterator over a naive dataloader.
 
     This iterator is stateful and blocks the calling thread until the next batch is
@@ -23,7 +23,7 @@ class NaiveDataLoaderIterator(DataLoaderIteratorProtocol[DatasetItem, Batch]):
         current_index: The current index of the iterator.
     """
 
-    def __init__(self, dataloader: "NaiveDataLoader[DatasetItem,Batch]"):
+    def __init__(self, dataloader: "NaiveDataloader[DatasetItem,Batch]"):
         """An iterator over a naive dataloader.
 
         This iterator is stateful and blocks the calling thread until the next batch is
@@ -62,7 +62,7 @@ class NaiveDataLoaderIterator(DataLoaderIteratorProtocol[DatasetItem, Batch]):
 
         raise StopIteration
 
-    def __iter__(self) -> "NaiveDataLoaderIterator[DatasetItem, Batch]":
+    def __iter__(self) -> "NaiveDataloaderIterator[DatasetItem, Batch]":
         """Get an iterator over the dataloader.
 
         This method returns an iterator over the dataloader. The iterator is stateful
@@ -86,8 +86,8 @@ class NaiveDataLoaderIterator(DataLoaderIteratorProtocol[DatasetItem, Batch]):
         return Progress(self.current_index, len(self.dataloader.dataset))
 
 
-class NaiveDataLoader(
-    DataLoaderProtocol[DatasetItem, Batch], Generic[DatasetItem, Batch]
+class NaiveDataloader(
+    DataloaderProtocol[DatasetItem, Batch], Generic[DatasetItem, Batch]
 ):
     """A naive dataloader that does not offload work to background processes.
 
@@ -158,7 +158,7 @@ class NaiveDataLoader(
         """
         return self.num_batches()
 
-    def __iter__(self) -> DataLoaderIteratorProtocol[DatasetItem, Batch]:
+    def __iter__(self) -> DataloaderIteratorProtocol[DatasetItem, Batch]:
         """Get an iterator over the dataloader.
 
         This method returns an iterator over the dataloader. The iterator is stateful
@@ -168,4 +168,4 @@ class NaiveDataLoader(
         Returns:
             An iterator over the dataloader.
         """
-        return NaiveDataLoaderIterator(self)
+        return NaiveDataloaderIterator(self)

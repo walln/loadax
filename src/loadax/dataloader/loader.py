@@ -8,9 +8,9 @@ from typing import TypeVar
 import jax
 
 from loadax.batcher import Batcher
-from loadax.dataloader.naive import NaiveDataLoader
+from loadax.dataloader.naive import NaiveDataloader
 from loadax.dataloader.progress import Progress
-from loadax.dataloader.protocol import DataLoaderIteratorProtocol
+from loadax.dataloader.protocol import DataloaderIteratorProtocol
 from loadax.dataloader.sharding import ShardingStrategy
 from loadax.dataset import Dataset
 from loadax.strategy import BatchStrategy
@@ -19,14 +19,14 @@ DatasetItem = TypeVar("DatasetItem")
 Batch = TypeVar("Batch")
 
 
-class DistributedDataLoaderIterator(DataLoaderIteratorProtocol[DatasetItem, Batch]):
+class DataloaderIterator(DataloaderIteratorProtocol[DatasetItem, Batch]):
     """Iterator for the threaded dataloader."""
 
-    def __init__(self, dataloader: "DistributedDataLoader[DatasetItem, Batch]"):
+    def __init__(self, dataloader: "Dataloader[DatasetItem, Batch]"):
         """Iterator for the dataloader.
 
         Args:
-            dataloader (ThreadedDataLoader): The dataloader to iterate over.
+            dataloader (Dataloader): The dataloader to iterate over.
         """
         self.dataloader = dataloader
         self.executor = ThreadPoolExecutor(max_workers=self.dataloader.num_workers)
@@ -99,7 +99,7 @@ class DistributedDataLoaderIterator(DataLoaderIteratorProtocol[DatasetItem, Batc
 
         return self.dataloader.batcher.batch(batch)
 
-    def __iter__(self) -> "DistributedDataLoaderIterator[DatasetItem,Batch]":
+    def __iter__(self) -> "DataloaderIterator[DatasetItem,Batch]":
         """Get an iterator for the dataloader."""
         self.current_index = 0
         self.futures.clear()
@@ -121,7 +121,7 @@ class DistributedDataLoaderIterator(DataLoaderIteratorProtocol[DatasetItem, Batc
         return Progress(self.current_index, len(self.dataloader.shard_indices))
 
 
-class DistributedDataLoader(NaiveDataLoader[DatasetItem, Batch]):
+class Dataloader(NaiveDataloader[DatasetItem, Batch]):
     """Dataloader that leverages threading for non-blocking data loading."""
 
     def __init__(
@@ -136,6 +136,28 @@ class DistributedDataLoader(NaiveDataLoader[DatasetItem, Batch]):
         num_shards: int | None = None,
     ):
         """A dataloader that leverages threading for non-blocking data loading.
+
+        Example:
+            ```python
+            from loadax import Dataloader, InMemoryDataset, Batcher
+
+            dataset = InMemoryDataset([1, 2, 3, 4, 5])
+            batcher = Batcher(lambda x: x)
+            dataloader = Dataloader(
+                dataset=dataset,
+                batcher=batcher,
+                strategy=FixedBatchStrategy(batch_size=2),
+                num_workers=2,
+                prefetch_factor=2,
+                sharding_strategy=NoShardingStrategy(),
+            )
+            for batch in dataloader:
+                print(batch)
+
+            #> [1, 2]
+            #> [3, 4]
+            #> [5]
+            ```
 
         Args:
             dataset (Dataset): The dataset to load data from.
@@ -182,6 +204,6 @@ class DistributedDataLoader(NaiveDataLoader[DatasetItem, Batch]):
             num_shards=self.num_shards,
         )
 
-    def __iter__(self) -> DataLoaderIteratorProtocol[DatasetItem, Batch]:
+    def __iter__(self) -> DataloaderIteratorProtocol[DatasetItem, Batch]:
         """Get an iterator for the dataloader."""
-        return DistributedDataLoaderIterator(self)
+        return DataloaderIterator(self)
