@@ -62,7 +62,7 @@ select = [
     "FBT001", # flake8-boolean-trap
 ]
 
-ignore = ["F722"]
+ignore = ["F722", "D100", "D105"]
 per-file-ignores = { "tests/**/*.py" = ["D100", "D103"] }
 
 
