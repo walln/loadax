@@ -1,6 +1,9 @@
+from typing import Any
+
 import jax
 import numpy as np
 from jax._src.mesh import thread_resources
+from jax.sharding import PartitionSpec
 
 from loadax.experimental.sharding.partition_spec import (
     DataPartitionType,
@@ -78,7 +81,9 @@ def host_to_global_device_array(
         partition_spec,
     )
 
-    def make_gda(x, device_buffers, partition_spec):
+    def make_gda(
+        x: jax.Array, device_buffers: list[jax.Array], partition_spec: PartitionSpec
+    ) -> jax.Array:
         if partition == DataPartitionType.FULL:
             global_batch_size = x.shape[0] * jax.process_count()
         elif partition == DataPartitionType.REPLICATED:
@@ -92,7 +97,7 @@ def host_to_global_device_array(
             arrays=device_buffers,
         )
 
-    return jax.tree_util.tree_map(make_gda, host_arrays, device_arrays, partition_specs)
+    return jax.tree_util.tree_map(make_gda, host_arrays, device_arrays, partition_specs)  # type: ignore
 
 
 def global_to_host_array(
@@ -100,21 +105,21 @@ def global_to_host_array(
     *,
     partition: DataPartitionType = DataPartitionType.FULL,
 ) -> Nested[jax.Array]:
-    """Extracts host addressable rows from each Tensor in `global_arrays`.
+    """Extracts host addressable rows from each Array in `global_arrays`.
 
     Args:
         global_arrays: A Nested[jax.Array].
-            Each leaf Tensor must have shape [global_batch_size, ...] with identical
-            global_batch_size across tensors.
-            The tensors must be partitioned in the same way and can be partitioned
+            Each leaf Array must have shape [global_batch_size, ...] with identical
+            global_batch_size across arrays.
+            The arrays must be partitioned in the same way and can be partitioned
             only along the batch axis.
         partition: How the global array should be partitioned.
 
     Returns:
         A Nested[jax.Array] with the same structure as `global_array`. Each leaf
-        Tensor will have shape [host_batch_size, ...] where `host_batch_size` will be
-        equal to `global_batch_size` if the global Tensors are replicated or
-        `global_batch_size // process_count` if the global Tensors are partitioned
+        Array will have shape [host_batch_size, ...] where `host_batch_size` will be
+        equal to `global_batch_size` if the global Arrays are replicated or
+        `global_batch_size // process_count` if the global Arrays are partitioned
         across hosts.
     """
 
@@ -129,7 +134,7 @@ def global_to_host_array(
     if not global_array_items:
         return global_arrays  # no leaf jax.Array.
     first_path, first_value = global_array_items[0]
-    sorted_first_value_shards = sort_global_shards(first_value.global_shards)
+    sorted_first_value_shards = sort_global_shards(list(first_value.global_shards))
     first_value_shard_is_local = [
         shard.data is not None for shard in sorted_first_value_shards
     ]
@@ -141,7 +146,7 @@ def global_to_host_array(
                 f"Value batch size mismatch: {batch_size} @ {first_path} vs. "
                 f"{value.shape[0]} @ {path} of {shapes(global_arrays)}"
             )
-        sorted_value_shards = sort_global_shards(value.global_shards)
+        sorted_value_shards = sort_global_shards(list(value.global_shards))
         value_shard_is_local = [shard.data is not None for shard in sorted_value_shards]
         if value_shard_is_local != first_value_shard_is_local:
             raise ValueError(
@@ -154,18 +159,20 @@ def global_to_host_array(
         if not local_data:
             raise ValueError(f"No local shard found: {sorted_value_shards}.")
         if partition == DataPartitionType.FULL:
-            return np.concatenate(local_data, axis=0)
+            # return ndarray its faster than jnp.concatenate
+            return np.concatenate(local_data, axis=0)  # type: ignore
         elif partition == DataPartitionType.REPLICATED:
-            return local_data[0]
+            return local_data[0]  # type: ignore
         else:
             raise NotImplementedError(f"Unsupported partition: {partition}")
 
-    return jax.tree_util.tree_map(
+    # TODO: jtu types are bad
+    return jax.tree_util.tree_map(  # type: ignore
         get_local_array, tree_paths(global_arrays), global_arrays
     )
 
 
-def with_sharding_constraint(x, shardings):
+def with_sharding_constraint(x: jax.Array, shardings: Any) -> jax.Array:
     """Syntax sugar for `jax.lax.with_sharding_constraint`.
 
     Used from within the context of a Mesh, this will produce a no-op if the Mesh
@@ -174,4 +181,5 @@ def with_sharding_constraint(x, shardings):
     mesh = thread_resources.env.physical_mesh
     if mesh.empty or mesh.size == 1:
         return x
-    return jax.lax.with_sharding_constraint(x, shardings)
+    # TODO: jax types are bad
+    return jax.lax.with_sharding_constraint(x, shardings)  # type: ignore

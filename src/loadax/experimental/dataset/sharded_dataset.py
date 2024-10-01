@@ -1,90 +1,154 @@
+from collections.abc import Iterator
+from typing import Generic
+
+from loadax.experimental.dataset.dataset import Dataset, Example
+
+
 def compute_shard_boundaries(
     num_shards: int,
     shard_id: int,
     dataset_size: int,
     *,
-    contiguous_shards: bool = True,
     drop_remainder: bool = True,
 ) -> tuple[int, int]:
-    """Compute the bounds of a shard.
+    """Compute the start and end indices for a specific shard.
 
-    This deterministically computes the bounds of a shard given the number of shards,
-    the shard ID, and the size of the dataset.
-    `compute_shard_boundaries(n, i, dataset_size)` creates a shard with all elements
-    of the dataset which have an element index modulo `n` equal to `i`.
-
-    If `contiguous_shards` is True, the shards are contiguous such that the global index
-    ordering is preserved. If `dataset_size % num_shards == l` then the first `l`
-    shards will be of length `(dataset_size // num_shards) + 1`
-    and the remaining shards will have length `(dataset_size // num_shards)`.
-
-    If `drop_remainder` is True, the shards will be of length
-    `(dataset_size // num_shards)` and the last `l` values will be dropped.
-    This is useful in multi-host training to ensure that each host has the
-    same amount of data.
+    This function deterministically computes the boundaries of a shard given the total
+    number of shards, the shard ID, and the size of the dataset.
 
     Args:
-        num_shards: The number of shards.
-        shard_id: The ID of the shard.
-        dataset_size: The size of the dataset.
-        contiguous_shards: If True, the shards are contiguous. Otherwise, they are
-            non-contiguous.
-        drop_remainder: Forces each shard to have the same length, ignoring the last
-            `l` values if `l = dataset_size % num_shards` such that `l > 0`.
+        num_shards (int): The total number of shards.
+        shard_id (int): The ID of the current shard (0-based).
+        dataset_size (int): The total size of the dataset.
+        drop_remainder (bool, optional): If True, drops the last incomplete shard
+            ensuring all shards have equal size. Defaults to True.
 
     Returns:
-        A tuple of (start, end) indices for the shard.
+        Tuple[int, int]: A tuple containing the start (inclusive) and end (exclusive)
+            indices for the shard.
+
+    Raises:
+        ValueError: If shard_id is out of range or if drop_remainder is True
+            and dataset_size is less than num_shards.
     """
     if not 0 <= shard_id < num_shards:
         raise ValueError(f"Invalid shard_id: {shard_id}. Must be in [0, {num_shards}).")
 
-    if dataset_size < num_shards:
+    if drop_remainder and dataset_size < num_shards:
         raise ValueError(
-            f"Invalid dataset_size: {dataset_size}. Must be greater than or equal "
-            f"to num_shards."
+            f"Invalid dataset_size: {dataset_size}. Must be >= num_shards "
+            f"({num_shards}) when drop_remainder is True."
         )
 
     if drop_remainder:
-        # Calculate the size of each shard when dropping the remainder
         shard_size = dataset_size // num_shards
-
-        if shard_size == 0:
-            # If shard_size is 0, all shards should have (0,0)
-            return (0, 0)
-
-        # Calculate the total size that will be used (excluding the remainder)
-        total_size = shard_size * num_shards
-
-        if contiguous_shards:
-            start = shard_size * shard_id
-            end = start + shard_size
-        else:
-            # For non-contiguous shards, calculate indices based on stride
-            start = shard_id
-            end = start + shard_size * num_shards
-            # Ensure we don't exceed the total_size
-            end = min(end, total_size)
+        start = shard_size * shard_id
+        end = start + shard_size
     else:
-        if contiguous_shards:
-            # Calculate base size and the number of shards that will have one
-            # extra element
-            base_size = dataset_size // num_shards
-            remainder = dataset_size % num_shards
-
-            if shard_id < remainder:
-                start = (base_size + 1) * shard_id
-                end = start + base_size + 1
-            else:
-                start = (base_size + 1) * remainder + base_size * (shard_id - remainder)
-                end = start + base_size
+        # Distribute the remainder across the first 'remainder' shards
+        base_size, remainder = divmod(dataset_size, num_shards)
+        if shard_id < remainder:
+            start = (base_size + 1) * shard_id
+            end = start + base_size + 1
         else:
-            # Non-contiguous shards without dropping the remainder
-            # Each shard takes every num_shards-th element starting from shard_id
-            # The end is set to the dataset_size to cover all possible elements
-            start = shard_id
-            end = dataset_size
+            start = (base_size + 1) * remainder + base_size * (shard_id - remainder)
+            end = start + base_size
 
-    # Ensure that end does not exceed dataset_size
+    # Ensure the end does not exceed dataset_size
     end = min(end, dataset_size)
 
-    return (start, end)
+    return start, end
+
+
+class ShardedDataset(Dataset[Example], Generic[Example]):
+    """Divides the dataset into non-overlapping contiguous shards."""
+
+    def __init__(
+        self,
+        dataset: Dataset[Example],
+        num_shards: int,
+        shard_id: int,
+        *,
+        drop_remainder: bool = True,
+    ):
+        """Initialize a ShardedDataset to shard the given dataset.
+
+        Args:
+            dataset (Dataset[E]): The underlying dataset to shard.
+            num_shards (int): Total number of shards.
+            shard_id (int): The ID of the current shard (0-based).
+            drop_remainder (bool, optional): Whether to drop the last incomplete shard.
+                Defaults to True.
+
+        Raises:
+            TypeError: If `dataset` is not an instance of Dataset.
+            ValueError: If `num_shards` is not a positive integer.
+            ValueError: If `shard_id` is not in the range [0, num_shards).
+            ValueError: If `drop_remainder` is True and `dataset_size` < `num_shards`.
+        """
+        if not isinstance(dataset, Dataset):
+            raise TypeError("dataset must be an instance of Dataset.")
+        if not isinstance(num_shards, int) or num_shards <= 0:
+            raise ValueError("num_shards must be a positive integer.")
+        if not isinstance(shard_id, int) or not (0 <= shard_id < num_shards):
+            raise ValueError(f"shard_id must be an integer in [0, {num_shards}).")
+
+        self.dataset = dataset
+        self.num_shards = num_shards
+        self.shard_id = shard_id
+        self.drop_remainder = drop_remainder
+        self.dataset_size = len(self.dataset)
+
+        if self.drop_remainder and self.dataset_size < self.num_shards:
+            raise ValueError(
+                f"dataset_size ({self.dataset_size}) must be >= num_shards "
+                f"({self.num_shards}) when drop_remainder is True."
+            )
+
+        self.start, self.end = compute_shard_boundaries(
+            num_shards=self.num_shards,
+            shard_id=self.shard_id,
+            dataset_size=self.dataset_size,
+            drop_remainder=self.drop_remainder,
+        )
+
+        self._length = max(0, self.end - self.start)
+
+    def __iter__(self) -> Iterator[Example]:
+        """Iterate over the examples in the shard."""
+        for idx in range(self.start, self.end):
+            yield self.dataset[idx]
+
+    def __len__(self) -> int:
+        """Return the number of examples in the shard."""
+        return self._length
+
+    def __getitem__(self, index: int) -> Example:
+        """Retrieve an example by its index within the shard.
+
+        Args:
+            index (int): The index of the example to retrieve.
+
+        Returns:
+            E: The data example at the specified index.
+
+        Raises:
+            IndexError: If the index is out of range.
+        """
+        if index < 0:
+            index += len(self)
+        if not 0 <= index < len(self):
+            raise IndexError(
+                f"Index {index} out of range for shard with length {len(self)}."
+            )
+
+        actual_index = self.start + index
+        return self.dataset[actual_index]
+
+    def shard_boundaries(self) -> tuple[int, int]:
+        """Return the start and end boundaries of the shard.
+
+        Returns:
+            Tuple[int, int]: The (start, end) indices of the shard.
+        """
+        return self.start, self.end

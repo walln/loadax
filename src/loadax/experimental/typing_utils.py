@@ -1,4 +1,4 @@
-from typing import Any, Literal, TypeVar
+from typing import Any, Literal, TypeAlias, TypeVar
 
 T = TypeVar("T")
 
@@ -17,4 +17,4 @@ class RequiredFieldValue:
 
 
 REQUIRED = RequiredFieldValue()
-Required = T | RequiredFieldValue | Any
+Required: TypeAlias = RequiredFieldValue | T

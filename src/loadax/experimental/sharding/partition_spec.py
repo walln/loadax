@@ -24,12 +24,12 @@ def input_partition_spec() -> PartitionSpec:
     Must be called within the context of a Mesh.
     """
     mesh = thread_resources.env.physical_mesh
-    return PartitionSpec(
+    return PartitionSpec(  # type: ignore
         mesh.axis_names,
     )
 
 
-def data_partition_type_to_spec(partition: DataPartitionType) -> PartitionSpec:
+def data_partition_type_to_spec(partition: DataPartitionType) -> PartitionSpec | None:
     """Returns a PartitionSpec for the given partition type."""
     if partition == DataPartitionType.FULL:
         return input_partition_spec()
