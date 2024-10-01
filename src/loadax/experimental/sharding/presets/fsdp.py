@@ -77,9 +77,10 @@ def make_fsdp_mesh_config(
             # Identify the first axis to partition (first non-singleton)
             # Here, we assume that the first axis is the one to be partitioned
             # Modify this logic based on your specific parallelism strategy
-            dcn_mesh_shape = list([1] * len(mesh_axis_names))
+            dcn_mesh_shape = tuple([1] * len(mesh_axis_names))
+
             # For simplicity, let's partition along the first axis
-            dcn_mesh_shape[0] = num_nodes
+            dcn_mesh_shape = (num_nodes,) + dcn_mesh_shape[1:]
 
         # Configure ICI (Intra-Component Interconnect) mesh shape
         ici_mesh_shape = list([1] * len(mesh_axis_names))
@@ -97,7 +98,7 @@ def make_fsdp_mesh_config(
         mesh_shape=default_mesh_shape,
         mesh_axis_names=mesh_axis_names,
         batch_axis_names=batch_axis_names,
-        mesh_rules=mesh_rules,
+        mesh_rules=mesh_rules,  # type: ignore
     )
 
     return mesh_config

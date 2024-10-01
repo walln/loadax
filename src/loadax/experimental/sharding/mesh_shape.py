@@ -3,8 +3,6 @@ from collections.abc import Sequence
 
 import jax
 
-from loadax.experimental.typing_utils import REQUIRED, Required
-
 MeshShape = Sequence[int]
 
 
@@ -34,7 +32,7 @@ class HybridMeshShape:
                 found {len(self.ici_mesh_shape)} and {len(self.dcn_mesh_shape)}."""
             )
 
-    def __len__(self):
+    def __len__(self) -> int:
         assert len(self.ici_mesh_shape) == len(self.dcn_mesh_shape)
         return len(self.ici_mesh_shape)
 
@@ -44,7 +42,7 @@ class HybridMeshShape:
 class MeshConfig:
     """Sharding Mesh Configuration."""
 
-    mesh_shape: Required[MeshShape | HybridMeshShape] = REQUIRED
+    mesh_shape: MeshShape | HybridMeshShape
     """ If specified as a MeshShape, must have the same length as mesh_axis_names.
     Implicitly, this treats the mesh shape as the ICI mesh shape; we default to a DCN
     mesh shape that partitions the first non-singleton axis across granules (e.g. TPU
@@ -65,7 +63,7 @@ class MeshConfig:
     Use `mesh_rules` to set different mesh shapes depending on the hardware platform.
     """
 
-    mesh_axis_names: Required[Sequence[str]] = REQUIRED
+    mesh_axis_names: Sequence[str]
     """The mesh axis names. The names can be referenced in ParameterSpec.mesh_axes."""
     batch_axis_names: str | Sequence[str] = "data"
     """Subset of mesh axis names over which leaves of the input batch are sharded."""
@@ -100,5 +98,21 @@ class MeshConfig:
 
         return jax.sharding.Mesh(
             devices or create_device_mesh(mesh_shape=self.mesh_shape),
-            self.mesh_axis_names,
+            tuple(self.mesh_axis_names),
         )
+
+    @property
+    def hosts(self) -> int:
+        """Returns the number of hosts in the mesh.
+
+        This is just a simple wrapper around jax.process_count().
+        """
+        return jax.process_count()
+
+    @property
+    def host_id(self) -> int:
+        """Returns the ID of the current host.
+
+        This is just a simple wrapper around jax.process_index().
+        """
+        return jax.process_index()
