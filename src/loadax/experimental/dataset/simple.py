@@ -8,7 +8,7 @@ from loadax.experimental.dataset.sharded_dataset import (
     Shardable,
     compute_shard_boundaries,
 )
-from loadax.experimental.dataset.shuffled_datasset import Shuffleable
+from loadax.experimental.dataset.shuffled_dataset import Shuffleable
 
 
 class SimpleDataset(
