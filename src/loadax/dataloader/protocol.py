@@ -1,6 +1,7 @@
 """The dataloader protocol defines the interface that a loadax dataloader implements."""
 
-from typing import Generic, Protocol, TypeVar
+from abc import abstractmethod
+from typing import Generic, Protocol, TypeVar, runtime_checkable
 
 from loadax.dataloader.progress import Progress
 
@@ -8,6 +9,7 @@ DatasetItem = TypeVar("DatasetItem", covariant=True)
 Batch = TypeVar("Batch", covariant=True)
 
 
+@runtime_checkable
 class DataloaderIteratorProtocol(Protocol[DatasetItem, Batch]):
     """The iterator protocol for a dataloader.
 
@@ -19,6 +21,7 @@ class DataloaderIteratorProtocol(Protocol[DatasetItem, Batch]):
         progress: The progress of the dataloader.
     """
 
+    @abstractmethod
     def progress(self) -> Progress:
         """Get the progress of the dataloader.
 
@@ -30,6 +33,7 @@ class DataloaderIteratorProtocol(Protocol[DatasetItem, Batch]):
         """
         ...
 
+    @abstractmethod
     def __next__(self) -> Batch:
         """Get the next batch.
 

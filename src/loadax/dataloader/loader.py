@@ -1,155 +1,140 @@
-"""Distributed dataloader that shards batches across the entire cluster."""
+"""Dataloader that loads batches in the background or synchronously."""
 
 import threading
-import weakref
-from concurrent.futures import Future, ThreadPoolExecutor
-from typing import TypeVar
+from concurrent.futures import ThreadPoolExecutor
+from queue import Empty, Full, Queue
+from typing import Generic
 
-import jax
-
-from loadax.batcher import Batcher
-from loadax.dataloader.naive import NaiveDataloader
 from loadax.dataloader.progress import Progress
-from loadax.dataloader.protocol import DataloaderIteratorProtocol
-from loadax.dataloader.sharding import ShardingStrategy
-from loadax.dataset import Dataset
-from loadax.strategy import BatchStrategy
-
-DatasetItem = TypeVar("DatasetItem")
-Batch = TypeVar("Batch")
+from loadax.dataset.dataset import Dataset, Example
 
 
-class DataloaderIterator(DataloaderIteratorProtocol[DatasetItem, Batch]):
-    """Iterator for the threaded dataloader."""
+class DataloaderIterator(Generic[Example]):
+    """Iterator for the dataloader."""
 
-    def __init__(self, dataloader: "Dataloader[DatasetItem, Batch]"):
+    executor: ThreadPoolExecutor | None
+    exception: Exception | None
+    buffer: Queue[list[Example]]
+
+    def __init__(self, dataloader: "Dataloader[Example]"):
         """Iterator for the dataloader.
 
         Args:
             dataloader (Dataloader): The dataloader to iterate over.
         """
         self.dataloader = dataloader
-        self.executor = ThreadPoolExecutor(max_workers=self.dataloader.num_workers)
         self.current_index = 0
-        self.cache: dict[int, DatasetItem] = {}
-        self.futures: dict[int, Future[tuple[int, DatasetItem | None]]] = {}
-        self.cache_lock = threading.Lock()
-        self.index_lock = threading.Lock()
+        self.buffer = Queue(maxsize=max(1, self.dataloader.prefetch_factor))
+        self.exception = None
 
-        self.shard_indices = list(self.dataloader.shard_indices)
-        self.total_indices = len(self.shard_indices)
+        if self.dataloader.num_workers > 0:
+            self.executor = ThreadPoolExecutor(max_workers=self.dataloader.num_workers)
+            self.stop_event = threading.Event()
+            self.prefetch_thread = threading.Thread(target=self._prefetch_worker)
+            self.prefetch_thread.start()
+        else:
+            self.executor = None
 
-        self._shutdown_finalizer = weakref.finalize(self, self._shutdown_executor)
-
-        self._start_prefetching()
-
-    def _start_prefetching(self) -> None:
-        """Start prefetching data in the background."""
-        with self.index_lock:
-            prefetch_end = self.current_index + (
-                self.dataloader.strategy.batch_size * self.dataloader.prefetch_factor
-            )
-            indices_to_prefetch = self.shard_indices[self.current_index : prefetch_end]
-        for index in indices_to_prefetch:
-            if index not in self.futures and index not in self.cache:
-                future = self.executor.submit(self._load_data, index)
-                self.futures[index] = future
-
-    def _load_data(self, index: int) -> tuple[int, DatasetItem | None]:
-        return index, self.dataloader.dataset.get(index)
-
-    def _get_item(self, index: int) -> DatasetItem | None:
-        """Get a single data item from the data queue."""
-        while True:
-            with self.cache_lock:
-                if index in self.cache:
-                    return self.cache.pop(index)
-                if index in self.futures and self.futures[index].done():
+    def _prefetch_worker(self) -> None:
+        while not self.stop_event.is_set():
+            if self.current_index >= len(self.dataloader.dataset):
+                break
+            try:
+                batch = self._load_batch(self.current_index)
+                # Use a timeout when putting items into the buffer
+                timeout = 0.1  # 100ms
+                while not self.stop_event.is_set():
                     try:
-                        _, item = self.futures[index].result()
-                        del self.futures[index]
-                        return item
-                    except Exception as e:
-                        print(f"Error loading item at index {index}: {e}")
-                        del self.futures[index]
-                        return None  # skip this index and move on to the next one
+                        self.buffer.put(batch, timeout=timeout)
+                        break
+                    except Full:
+                        continue
+                self.current_index += self.dataloader.batch_size
+            except Exception as e:
+                self.exception = e
+                break
 
-            self._start_prefetching()
+    def _load_batch(self, batch_start: int) -> list[Example]:
+        batch_end = min(
+            batch_start + self.dataloader.batch_size, len(self.dataloader.dataset)
+        )
+        return [self.dataloader.dataset[i] for i in range(batch_start, batch_end)]
 
-    def __next__(self) -> Batch:
-        """Get the next batch from the dataloader."""
-        with self.index_lock:
-            if self.current_index >= self.total_indices:
+    def __next__(self) -> list[Example]:
+        if self.executor:
+            if self.exception:
+                raise self.exception
+            try:
+                batch = self.buffer.get(timeout=0.1)  # 100ms timeout
+            except Empty:
+                if self.current_index >= len(self.dataloader.dataset):
+                    raise StopIteration from None
+                return self.__next__()  # Try again
+            if not batch and self.current_index >= len(self.dataloader.dataset):
                 raise StopIteration
+        else:
+            if self.current_index >= len(self.dataloader.dataset):
+                raise StopIteration
+            batch = self._load_batch(self.current_index)
+            self.current_index += self.dataloader.batch_size
 
-            batch_end = self.current_index + self.dataloader.strategy.batch_size
-            batch_indices = self.shard_indices[self.current_index : batch_end]
-            self.current_index = batch_end
-
-        self._start_prefetching()
-
-        for index in batch_indices:
-            item = self._get_item(index)
-            if item is not None:
-                self.dataloader.strategy.add(item)
-
-        batch = self.dataloader.strategy.batch(force=True)
-        if batch is None:
+        if len(batch) < self.dataloader.batch_size and self.dataloader.drop_last:
             raise StopIteration
 
-        return self.dataloader.batcher.batch(batch)
+        return batch
 
-    def __iter__(self) -> "DataloaderIterator[DatasetItem,Batch]":
-        """Get an iterator for the dataloader."""
-        self.current_index = 0
-        self.futures.clear()
-        self.cache.clear()
-        self._start_prefetching()
+    def __iter__(self) -> "DataloaderIterator[Example]":
         return self
 
-    def _shutdown_executor(self) -> None:
-        if self.executor:
-            self.executor.shutdown(wait=True)
+    def __len__(self) -> int:
+        return len(self.dataloader)
 
     def __del__(self) -> None:
-        """Clean up the dataloader."""
-        if self._shutdown_finalizer and self._shutdown_finalizer.alive:
-            self._shutdown_finalizer()
+        if self.executor:
+            self.stop_event.set()
+            # Wait for the prefetch thread to finish with a timeout
+            self.prefetch_thread.join(timeout=5.0)
+            self.executor.shutdown(wait=False)
+            # Clear the buffer to unblock any waiting put() calls
+            while not self.buffer.empty():
+                try:
+                    self.buffer.get_nowait()
+                except Empty:
+                    break
 
     def progress(self) -> Progress:
         """Get the progress of the dataloader."""
-        return Progress(self.current_index, len(self.dataloader.shard_indices))
+        total_items = len(self.dataloader.dataset)
+        processed_items = min(self.current_index, total_items)
+        return Progress(processed_items, total_items)
 
 
-class Dataloader(NaiveDataloader[DatasetItem, Batch]):
-    """Dataloader that leverages threading for non-blocking data loading."""
+class Dataloader(Generic[Example]):
+    """Dataloader that loads batches in the background or synchronously."""
 
     def __init__(
         self,
-        dataset: Dataset[DatasetItem],
-        batcher: Batcher[DatasetItem, Batch],
-        strategy: BatchStrategy[DatasetItem],
-        num_workers: int,
-        prefetch_factor: int,
-        sharding_strategy: ShardingStrategy,
-        shard_id: int | None = None,
-        num_shards: int | None = None,
+        dataset: Dataset[Example],
+        batch_size: int,
+        num_workers: int = 0,
+        prefetch_factor: int = 0,
+        *,
+        drop_last: bool = False,
     ):
-        """A dataloader that leverages threading for non-blocking data loading.
+        """A dataloader that can load data in the background or synchronously.
 
         Example:
             ```python
-            from loadax import Dataloader, InMemoryDataset, Batcher
+            from loadax.experimental.dataset.simple import SimpleDataset
+            from loadax.experimental.loader import Dataloader
 
-            dataset = InMemoryDataset([1, 2, 3, 4, 5])
-            batcher = Batcher(lambda x: x)
+            dataset = SimpleDataset([1, 2, 3, 4, 5])
             dataloader = Dataloader(
                 dataset=dataset,
-                batcher=batcher,
-                strategy=FixedBatchStrategy(batch_size=2),
+                batch_size=2,
                 num_workers=2,
                 prefetch_factor=2,
-                sharding_strategy=NoShardingStrategy(),
+                drop_last=False,
             )
             for batch in dataloader:
                 print(batch)
@@ -161,49 +146,28 @@ class Dataloader(NaiveDataloader[DatasetItem, Batch]):
 
         Args:
             dataset (Dataset): The dataset to load data from.
-            batcher (Batcher): The batcher to use for batching.
-            strategy (BatchStrategy): The batch strategy to use for prefetching.
+            batch_size (int): The size of each batch.
             num_workers (int): The number of workers to use for parallel data loading.
+                If 0, data will be loaded synchronously.
             prefetch_factor (int): The prefetch factor to use for prefetching.
-            sharding_strategy (JaxShardingStrategy): The sharding strategy for
-                distributed data loading.
-            shard_id (int | None): The ID of this shard (node).
-                If None, then the shard_id will be determined based on the
-                current process index and the number of shards.
-            num_shards (int | None): The total number of shards (nodes).
-                If None, then the number of shards will be determined based on
-                the number of processes.
+                If 0, no prefetching will occur.
+            drop_last (bool): Whether to drop the last incomplete batch.
         """
-        super().__init__(dataset, batcher, strategy)
-        assert num_workers > 0, "num_workers must be at least 1"
+        self.dataset = dataset
+        self.batch_size = batch_size
         self.num_workers = num_workers
-
-        assert prefetch_factor > 0, "prefetch_factor must be at least 1"
         self.prefetch_factor = prefetch_factor
+        self.drop_last = drop_last
 
-        self.sharding_strategy = sharding_strategy
-
-        # Check that both shard_id and num_shards are provided or neither are provided
-
-        assert (shard_id is None and num_shards is None) or (
-            shard_id is not None and num_shards is not None
-        ), "Either both shard_id and num_shards must be provided or neither"
-
-        assert num_shards is None or num_shards > 0, "num_shards must be greater than 0"
-        self.num_shards = num_shards or jax.process_count()
-
-        self.shard_id = shard_id or (jax.process_index() % self.num_shards)
-        assert (
-            self.shard_id < self.num_shards
-        ), f"shard_id {self.shard_id} must be in the range [0, {self.num_shards})"
-
-        # Determine the shard indices for this node
-        self.shard_indices = self.sharding_strategy.get_shard_indices(
-            dataset_size=len(dataset),
-            shard_id=self.shard_id,
-            num_shards=self.num_shards,
-        )
-
-    def __iter__(self) -> DataloaderIteratorProtocol[DatasetItem, Batch]:
-        """Get an iterator for the dataloader."""
+    def __iter__(self) -> DataloaderIterator[Example]:
         return DataloaderIterator(self)
+
+    def __len__(self) -> int:
+        num_examples = len(self.dataset)
+        num_full_batches = num_examples // self.batch_size
+        has_partial_batch = (num_examples % self.batch_size) > 0
+
+        if self.drop_last:
+            return num_full_batches
+        else:
+            return num_full_batches + (1 if has_partial_batch else 0)

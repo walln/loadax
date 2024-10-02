@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 
 from loadax.experimental.dataset.simple import SimpleDataset
-from loadax.experimental.loader import Dataloader
+from loadax.dataloader.loader import Dataloader
 from loadax.experimental.sharding.placement import host_to_global_device_array
 from loadax.experimental.sharding.presets import make_fsdp_mesh_config
 
