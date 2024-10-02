@@ -1,7 +1,6 @@
 import pytest
 
-from loadax.dataloader.loader import Dataloader
-from loadax.dataset.simple import SimpleDataset
+from loadax import Dataloader, SimpleDataset
 
 
 @pytest.fixture

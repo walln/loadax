@@ -4,8 +4,7 @@ from typing import Any
 
 import pytest
 
-from loadax.dataset.sharded_dataset import ShardedDataset
-from loadax.dataset.simple import SimpleDataset
+from loadax import ShardedDataset, SimpleDataset
 
 
 def compute_expected_boundaries(

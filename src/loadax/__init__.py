@@ -12,6 +12,7 @@ from loadax.dataset.combined_dataset import CombinedDataset as CombinedDataset
 from loadax.dataset.dataset import Dataset as Dataset
 from loadax.dataset.huggingface import HuggingFaceDataset as HuggingFaceDataset
 from loadax.dataset.partial_dataset import PartialDataset as PartialDataset
+from loadax.dataset.sampled_dataset import SampledDataset as SampledDataset
 from loadax.dataset.sharded_dataset import ShardedDataset as ShardedDataset
 from loadax.dataset.shuffled_dataset import Shuffleable as Shuffleable
 from loadax.dataset.simple import SimpleDataset as SimpleDataset
