@@ -14,6 +14,7 @@ os.environ["XLA_FLAGS"] = "--xla_force_host_platform_device_count=8"
 
 if __name__ == "__main__":
     dataset = SimpleDataset(list(range(128)))
+    dataset = dataset.shuffle(jax.random.PRNGKey(0))
 
     mesh_config = make_fsdp_mesh_config(
         mesh_axis_names=("data", "model"), batch_axis_names="data"

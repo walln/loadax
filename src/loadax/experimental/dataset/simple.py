@@ -1,14 +1,19 @@
 from collections.abc import Iterator
 from typing import Generic
 
+import jax
+
 from loadax.experimental.dataset.dataset import Dataset, Example
 from loadax.experimental.dataset.sharded_dataset import (
     Shardable,
     compute_shard_boundaries,
 )
+from loadax.experimental.dataset.shuffled_datasset import Shuffleable
 
 
-class SimpleDataset(Shardable[Example], Dataset[Example], Generic[Example]):
+class SimpleDataset(
+    Shardable[Example], Shuffleable[Example], Dataset[Example], Generic[Example]
+):
     """A dataset that wraps a list of examples.
 
     Args:
@@ -60,3 +65,16 @@ class SimpleDataset(Shardable[Example], Dataset[Example], Generic[Example]):
             drop_remainder=False,
         )
         return SimpleDataset(self.data[start:end])
+
+    def shuffle(self, seed: jax.Array) -> "Dataset[Example]":
+        """Shuffle the dataset.
+
+        Args:
+            seed: The seed to use for the shuffle. This is a jax
+            PRNGKey as all randomization in loadax is implemented using jax.random.
+
+        Returns:
+            The shuffled dataset.
+        """
+        indices = jax.random.permutation(seed, len(self))
+        return SimpleDataset([self.data[i] for i in indices])
