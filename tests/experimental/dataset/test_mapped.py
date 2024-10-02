@@ -126,3 +126,45 @@ def test_mapped_dataset_type_propagation():
     )
     assert all(isinstance(item, dict) for item in complex_mapped_dataset)
     assert all("value" in item and "squared" in item for item in complex_mapped_dataset)
+
+
+def test_simple_dataset_map():
+    base_dataset = SimpleDataset([1, 2, 3, 4, 5])
+
+    def transform(x):
+        return x * 2
+
+    # Test basic mapping
+    mapped_dataset = base_dataset.map(transform)
+    assert isinstance(mapped_dataset, MappedDataset)
+    assert list(mapped_dataset) == [2, 4, 6, 8, 10]
+
+    # Test length preservation
+    assert len(mapped_dataset) == len(base_dataset)
+
+    # Test indexing
+    assert mapped_dataset[2] == 6
+
+    # Test with more complex transform
+    def complex_transform(x):
+        return {"original": x, "doubled": x * 2}
+
+    complex_mapped_dataset = base_dataset.map(complex_transform)
+    assert complex_mapped_dataset[0] == {"original": 1, "doubled": 2}
+
+    # Test with empty dataset
+    empty_dataset = SimpleDataset([])
+    empty_mapped = empty_dataset.map(transform)
+    assert len(empty_mapped) == 0
+    assert list(empty_mapped) == []
+
+    # Test type propagation
+    def str_transform(x):
+        return str(x)
+
+    str_mapped = base_dataset.map(str_transform)
+    assert all(isinstance(item, str) for item in str_mapped)
+
+    # Test chaining of map operations
+    chained_dataset = base_dataset.map(lambda x: x * 2).map(lambda x: x + 1)
+    assert list(chained_dataset) == [3, 5, 7, 9, 11]

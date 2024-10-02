@@ -164,9 +164,9 @@ class MappedBatchDataset(Dataset[Transformed], Generic[Example, Transformed]):
         return (len(self.dataset) + self.batch_size - 1) // self.batch_size
 
     def __getitem__(self, index: int) -> Transformed:
+        if index < 0 or index >= len(self):
+            raise IndexError("Index out of bounds")
         start = index * self.batch_size
-        end = start + self.batch_size
-        batch = []
-        for i in range(start, min(end, len(self.dataset))):
-            batch.append(self.dataset[i])
+        end = min(start + self.batch_size, len(self.dataset))
+        batch = [self.dataset[i] for i in range(start, end)]
         return self.transform(batch)
