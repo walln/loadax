@@ -1,9 +1,7 @@
 from collections.abc import Iterator
-from typing import Generic, TypeVar
+from typing import Generic
 
-from loadax.experimental.dataset.dataset import Dataset
-
-Example = TypeVar("Example")
+from loadax.experimental.dataset.dataset import Dataset, Example
 
 
 class CombinedDataset(Dataset[Example], Generic[Example]):
