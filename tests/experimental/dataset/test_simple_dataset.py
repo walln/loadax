@@ -1,3 +1,4 @@
+import jax
 import pytest
 
 from loadax.experimental.dataset.simple import SimpleDataset
@@ -87,3 +88,10 @@ def test_simple_dataset_split_dataset_by_node(sample_data):
     shard = dataset.split_dataset_by_node(world_size=2, rank=1)
     assert len(shard) == 2
     assert list(shard) == [4, 5]
+
+
+def test_simple_dataset_shuffle(sample_data):
+    dataset = SimpleDataset(sample_data)
+    shuffled_dataset = dataset.shuffle(jax.random.PRNGKey(0))
+    assert list(shuffled_dataset) != sample_data
+    assert sorted(shuffled_dataset) == sample_data
