@@ -1,5 +1,6 @@
+from abc import abstractmethod
 from collections.abc import Iterator
-from typing import Generic
+from typing import Generic, Protocol, runtime_checkable
 
 from loadax.experimental.dataset.dataset import Dataset, Example
 
@@ -60,6 +61,32 @@ def compute_shard_boundaries(
     return start, end
 
 
+@runtime_checkable
+class Shardable(Protocol, Generic[Example]):
+    """A shardable dataset must implement the Shardable protocol.
+
+    Each dataset has to implement sharding by itself because the underlying
+    storage may have unique constraints to consider when creating the sharding
+    boundaries.
+    """
+
+    @abstractmethod
+    def split_dataset_by_node(self, world_size: int, rank: int) -> Dataset[Example]:
+        """Split the dataset into shards.
+
+        If possible the shards should be of equal size and non-overlapping
+        and continguous.
+
+        Args:
+            world_size (int): The number of nodes.
+            rank (int): The rank of the current node.
+
+        Returns:
+            Dataset[Example]: The shard of the dataset for the current node.
+        """
+        pass
+
+
 class ShardedDataset(Dataset[Example], Generic[Example]):
     """Divides the dataset into non-overlapping contiguous shards."""
 
@@ -86,8 +113,8 @@ class ShardedDataset(Dataset[Example], Generic[Example]):
             ValueError: If `shard_id` is not in the range [0, num_shards).
             ValueError: If `drop_remainder` is True and `dataset_size` < `num_shards`.
         """
-        if not isinstance(dataset, Dataset):
-            raise TypeError("dataset must be an instance of Dataset.")
+        if not isinstance(dataset, Shardable):
+            raise TypeError("dataset must implement the Shardable protocol.")
         if not isinstance(num_shards, int) or num_shards <= 0:
             raise ValueError("num_shards must be a positive integer.")
         if not isinstance(shard_id, int) or not (0 <= shard_id < num_shards):
