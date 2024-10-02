@@ -1,8 +1,8 @@
 import jax.numpy as jnp
 import pytest
 
+from loadax import SimpleDataset
 from loadax.dataset.dataset import MappedDataset
-from loadax.dataset.simple import SimpleDataset
 
 
 @pytest.fixture

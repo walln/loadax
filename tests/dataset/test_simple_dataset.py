@@ -1,7 +1,7 @@
 import jax
 import pytest
 
-from loadax.dataset.simple import SimpleDataset
+from loadax import SimpleDataset
 
 
 @pytest.fixture

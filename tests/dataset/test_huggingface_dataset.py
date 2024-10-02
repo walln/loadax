@@ -1,7 +1,7 @@
 import pytest
 from datasets import Dataset as HFDataset
 
-from loadax.dataset.huggingface import HuggingFaceDataset
+from loadax import HuggingFaceDataset
 
 
 @pytest.fixture
