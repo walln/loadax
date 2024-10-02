@@ -5,10 +5,11 @@ from datasets import Dataset as HFDataset
 from datasets import load_dataset
 
 from loadax.experimental.dataset.dataset import Dataset, Example
+from loadax.experimental.dataset.sharded_dataset import Shardable
 from loadax.experimental.logger import logger
 
 
-class HuggingFaceDataset(Dataset[Example]):
+class HuggingFaceDataset(Shardable[Example], Dataset[Example]):
     """A dataset that integrates with Hugging Face's `datasets` library."""
 
     def __init__(
@@ -51,15 +52,13 @@ class HuggingFaceDataset(Dataset[Example]):
         Args:
             dataset: HuggingFace Dataset
         """
-        self.dataset = dataset
+        self._dataset = dataset
 
     @staticmethod
     def from_hub(
         path: str,
         name: str | None = None,
         split: str | None = None,
-        num_shards: int | None = None,
-        shard_id: int | None = None,
     ) -> "HuggingFaceDataset[Example]":
         """Load a HuggingFace dataset from the HuggingFace hub.
 
@@ -67,8 +66,6 @@ class HuggingFaceDataset(Dataset[Example]):
             path: The path to the dataset on the HuggingFace hub.
             name: The name of the dataset on the HuggingFace hub.
             split: The split of the dataset on the HuggingFace hub.
-            num_shards: The number of shards to divide the dataset into.
-            shard_id: The ID of the shard to divide the dataset into.
 
         Returns:
             HuggingFaceDataset[Example]: The HuggingFace dataset.
@@ -83,7 +80,6 @@ class HuggingFaceDataset(Dataset[Example]):
         dataset = load_dataset(
             path=path, name=name, split=split, trust_remote_code=True
         )
-
         dataset.set_format(type="numpy")
 
         assert isinstance(
@@ -91,25 +87,13 @@ class HuggingFaceDataset(Dataset[Example]):
         ), f"loaded dataset must be a Dataset, got {type(dataset)}"
 
         logger.info(f"Loaded HF dataset with length: {len(dataset)}")
-        # Check that either both num_shards and shard_id are None or neither are None
-        if not ((num_shards and shard_id) or (not num_shards and not shard_id)):
-            raise ValueError(
-                "Either both num_shards and shard_id must be None or neither must be"
-            )
-        if num_shards is not None:
-            dataset = dataset.shard(num_shards, shard_id, contiguous=True)
-            logger.info(
-                f"Sharded HF dataset with {num_shards} shards. "
-                f"New length: {len(dataset)}"
-            )
-
         return HuggingFaceDataset[Example](dataset)
 
     def __iter__(self) -> Iterator[Any]:
-        return iter(self.dataset)
+        return iter(self._dataset)
 
     def __len__(self) -> int:
-        return len(self.dataset)
+        return len(self._dataset)
 
     def __getitem__(self, index: int) -> Any:
         """Retrieve an example by its index.
@@ -121,3 +105,26 @@ class HuggingFaceDataset(Dataset[Example]):
             Any: The data example at the specified index.
         """
         return self.dataset[index]
+
+    def split_dataset_by_node(self, world_size: int, rank: int) -> Dataset[Example]:
+        """Split the dataset into shards.
+
+        Args:
+            world_size (int): The number of nodes.
+            rank (int): The rank of the current node.
+
+        Returns:
+            Dataset[Example]: The shard of the dataset for the current node.
+        """
+        from datasets.distributed import (
+            split_dataset_by_node as hf_split_dataset_by_node,
+        )
+
+        dataset = hf_split_dataset_by_node(self._dataset, rank, world_size)
+        assert isinstance(dataset, HFDataset)
+        return HuggingFaceDataset[Example](dataset)
+
+    @property
+    def dataset(self) -> HFDataset:
+        """The underlying HuggingFace dataset."""
+        return self._dataset

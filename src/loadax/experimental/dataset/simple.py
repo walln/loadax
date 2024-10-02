@@ -2,9 +2,13 @@ from collections.abc import Iterator
 from typing import Generic
 
 from loadax.experimental.dataset.dataset import Dataset, Example
+from loadax.experimental.dataset.sharded_dataset import (
+    Shardable,
+    compute_shard_boundaries,
+)
 
 
-class SimpleDataset(Dataset[Example], Generic[Example]):
+class SimpleDataset(Shardable[Example], Dataset[Example], Generic[Example]):
     """A dataset that wraps a list of examples.
 
     Args:
@@ -38,3 +42,21 @@ class SimpleDataset(Dataset[Example], Generic[Example]):
             IndexError: If the index is out of range.
         """
         return self.data[index]
+
+    def split_dataset_by_node(self, world_size: int, rank: int) -> Dataset[Example]:
+        """Split the dataset into shards.
+
+        Args:
+            world_size (int): The number of nodes.
+            rank (int): The rank of the current node.
+
+        Returns:
+            Dataset[Example]: The shard of the dataset for the current node.
+        """
+        start, end = compute_shard_boundaries(
+            num_shards=world_size,
+            shard_id=rank,
+            dataset_size=len(self),
+            drop_remainder=False,
+        )
+        return SimpleDataset(self.data[start:end])
