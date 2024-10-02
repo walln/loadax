@@ -4,6 +4,4 @@ For the most part, just using the DataLoader fluent builder is all you should ne
 However, if full customization is needed, the specific dataloader can be used directly.
 """
 
-from loadax.dataloader.builder import DataloaderBuilder as DataloaderBuilder
 from loadax.dataloader.loader import Dataloader as Dataloader
-from loadax.dataloader.naive import NaiveDataloader as NaiveDataloader
