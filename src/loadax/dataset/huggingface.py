@@ -70,7 +70,7 @@ class HuggingFaceDataset(Shardable[Example], Dataset[Example]):
         Returns:
             HuggingFaceDataset[Example]: The HuggingFace dataset.
 
-        Example:
+        Examples:
             ```python
             from loadax.experimental.dataset.huggingface import HuggingFaceDataset
 

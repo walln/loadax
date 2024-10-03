@@ -71,7 +71,7 @@ class SimpleDataset(
 
         Args:
             seed: The seed to use for the shuffle. This is a jax
-            PRNGKey as all randomization in loadax is implemented using jax.random.
+                PRNGKey as all randomization in loadax is implemented using jax.random.
 
         Returns:
             The shuffled dataset.

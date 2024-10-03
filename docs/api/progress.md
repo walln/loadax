@@ -4,11 +4,10 @@ Progress is a simple interface that allows you to track the progress of a datalo
 manual calculations of the progress, dealing with batch sizes, or forgetting to update your progress tracking.
 
 ```python title="Tracking progress"
-from loadax import Dataloader, InMemoryDataset, Batcher
+from loadax import Dataloader, SimpleDataset
 
-dataset = InMemoryDataset([1, 2, 3, 4, 5])
-batcher = Batcher(lambda x: x)
-dataloader = Dataloader(batcher).batch_size(2).build(dataset)
+dataset = SimpleDataset([1, 2, 3, 4, 5])
+dataloder = Dataloader(dataset, batch_size=2)
 
 iterator = iter(dataloader)
 

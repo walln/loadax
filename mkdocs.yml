@@ -49,7 +49,11 @@ markdown_extensions:
       title: "On this page"
   - admonition
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid_custom
   - pymdownx.highlight:
       pygments_lang_class: true
   - pymdownx.extra
@@ -68,6 +72,7 @@ plugins:
       alias_type: symlink
       canonical_version: latest
   - search
+  - mermaid2
   - exclude:
       glob:
       - __pycache__/*
@@ -98,27 +103,22 @@ nav:
       - Roadmap: roadmap.md
   - API Documentation:
       - Dataloader:
-          - Dataloader Builder: api/builder.md
           - Dataloader: api/loader.md
-          - Naive Dataloader: api/naive.md
           - Utilties: 
               - Progress: api/progress.md
-      - Batching Strategies:
-          - Batch Strategy: api/strategy/batch.md
-          - Fixed Batch Strategy: api/strategy/fixed.md
       - Sharding:
-          - Sharding Strategy: api/sharding/sharding-strategy.md
+          - Mesh: api/sharding/mesh.md
+          - Placement: api/sharding/placement.md
           - Presets: api/sharding/presets.md
       - Datasets:
           - Dataset: api/dataset/dataset.md
-          - InMemoryDataset: api/dataset/in-memory.md
-          - RangeDataset: api/dataset/range.md
+          - SimpleDataset: api/dataset/simple.md
           - Transformations:
               - MappedDataset: api/dataset/transformations/mapped.md
               - CombinedDataset: api/dataset/transformations/combined.md
               - PartialDataset: api/dataset/transformations/partial.md
               - SampledDataset: api/dataset/transformations/sampled.md
-              - ShuffledDataset: api/dataset/transformations/shuffled.md
+              - ShardedDataset: api/dataset/transformations/sharded.md
           - Integrations:
               - HuggingFace: api/dataset/integration/huggingface.md
 

@@ -29,6 +29,6 @@ for i in range(len(dataset)):
 #> 5
 ```
 
-::: loadax.dataset.protocol.Dataset
+::: loadax.dataset.dataset.Dataset
     selection:
-      members: false
+      members: true
