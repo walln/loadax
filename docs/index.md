@@ -9,11 +9,10 @@ Loadax is a dataloading library designed for the JAX ecosystem. It provides util
 background prefetching to improve performance, and distriubted data loading to train on multiple devices and even multiple hosts.
 
 ```py title="Loadax Example"
-from loadax import DataloaderBuilder, InMemoryDataset, Batcher
+from loadax import Dataloader, SimpleDataset
 
-dataset = InMemoryDataset([1, 2, 3, 4, 5])
-batcher = Batcher(lambda x: x)
-loader = DataloaderBuilder(batcher).batch_size(2).build(dataset)
+dataset = SimpleDataset([1, 2, 3, 4, 5])
+dataloader = Dataloader(dataset, batch_size=2)
 
 for batch in loader:
     print(batch)

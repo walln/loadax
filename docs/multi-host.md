@@ -2,21 +2,22 @@
 
 Loadax provides a simple interface for defining your dataloading strategy for distributed training. This means that you can easily train your models on multiple hosts, and load data in parallel across multiple hosts. Loadax also provides a few common sharding configurations that can be used out of the box, but you can also create your own sharding configurations using JAX's `Mesh` and `NamedSharding` primitives.
 
-Loadax's DistributedDataloader will automatically determine which elements to load on each shard within the network ensuring that the data is evenly distributed, and each node only gets the data it needs. This requires no manual configuration, replication, or network topology changes.
+Loadax's `Dataloader` will automatically determine which elements to load on each host within the network ensuring that the data is evenly distributed, and each host only gets the data it needs. This requires no manual configuration, replication, or network topology changes.
 
 ```python title="Creating a distributed dataloader"
-from loadax import DataloaderBuilder, InMemoryDataset, Batcher
-from loadax.dataloader.loader import Dataloader
-from loadax.sharding_utilities import fsdp_sharding
+from loadax import Dataloader, SimpleDataset, ShardedDataset
+from loadax.sharding.presets import make_fsdp_mesh_config # or make your own
 
-mesh, axis_names = fsdp_sharding()
+config = make_fsdp_mesh_config(axis_names=("data", "model"), batch_axis_name="data")
+mesh = config.create_device_mesh()
 
-dataset = InMemoryDataset([1, 2, 3, 4, 5])
-batcher = Batcher(lambda x: x)
+# You can use jax.process_index() to get the rank of the current host and jax.process_count() to get the total number of hosts.
+dataset = SimpleDataset([1, 2, 3, 4, 5]).split_dataset_by_node(world_size=2, rank=0)
+dataloader = Dataloader(dataset, batch_size=2)
 
-mesh = Mesh(...)
-dataloader = DataloaderBuilder(batcher)
-    .batch_size(2)
-    .shard(mesh, axis_names[0])
-    .build(dataset)
+with mesh:
+    for batch in dataloader:
+        print(batch)
 ```
+
+See documentation for sharding presets to learn about common configurations such as FSDP and DDP. Or checkout the examples to learn more.

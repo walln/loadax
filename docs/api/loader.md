@@ -13,19 +13,14 @@ loadax ensures deterministic ordering of batches, and the background workers wil
 they are requested.
 
 ```python title="Creating a dataloader"
-from loadax import Dataloader, InMemoryDataset, Batcher
-from loadax.strategy import FixedBatchStrategy
-from loadax.dataloader.sharding import NoShardingStrategy
+from loadax import Dataloader, SimpleDataset
 
-dataset = InMemoryDataset([1, 2, 3, 4, 5])
-batcher = Batcher(lambda x: x)
+dataset = SimpleDataset([1, 2, 3, 4, 5])
 dataloader = Dataloader(
     dataset=dataset,
-    batcher=batcher,
-    strategy=FixedBatchStrategy(batch_size=2),
+    batch_size=2,
     num_workers=2,
     prefetch_factor=2,
-    sharding_strategy=NoShardingStrategy(),
 )
 for batch in dataloader:
     print(batch)

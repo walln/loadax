@@ -31,6 +31,7 @@ dev-dependencies = [
     "mike>=2.1.3",
     "mkdocs-exclude>=1.0.2",
     "mkdocstrings-python>=1.11.1",
+    "mkdocs-mermaid2-plugin>=1.1.1",
 ]
 
 [tool.hatch.metadata]
@@ -62,7 +63,7 @@ select = [
     "FBT001", # flake8-boolean-trap
 ]
 
-ignore = ["F722", "D100", "D105"]
+ignore = ["F722", "D100", "D104", "D105"]
 per-file-ignores = { "tests/**/*.py" = ["D100", "D103"] }
 
 

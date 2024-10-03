@@ -5,18 +5,14 @@ A sampled dataset is a simple dataset that returns a subset of the underlying da
 The sampling procedure is deterministic and leverages JAX's random number generation.
 
 ```python title="Creating a sampled dataset"
-from loadax import SampledDatasetWithReplacement, InMemoryDataset
+from loadax import SampledDataset, SimpleDataset
 import jax
 
-dataset = InMemoryDataset([1, 2, 3, 4, 5])
+dataset = SimpleDataset([1, 2, 3, 4, 5])
 key = jax.random.PRNGKey(0)
-sampled_dataset = SampledDatasetWithReplacement(dataset, 3, key)
+sampled_dataset = SampledDataset(dataset, 3, key)
 ```
 
-::: loadax.dataset.transform.SampledDatasetWithoutReplacement
-    selection:
-      members: false
-
-::: loadax.dataset.transform.SampledDatasetWithReplacement
+::: loadax.dataset.sampled_dataset.SampledDataset
     selection:
       members: false

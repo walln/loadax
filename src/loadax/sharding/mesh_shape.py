@@ -13,9 +13,13 @@ class HybridMeshShape:
 
     For example, with mesh axes (data, model):
     - Pure fsdp on a v4-8:
+        ```python
         HybridMeshShape(ici_mesh_shape=(1, 4), dcn_mesh_shape=(1, 1))
+        ```
     - Two-way data parallelism over 2 H100 nodes, and fsdp within-node:
+        ```python
         HybridMeshShape(ici_mesh_shape=(1, 8), dcn_mesh_shape=(2, 1))
+        ```
     """
 
     ici_mesh_shape: MeshShape

@@ -24,11 +24,14 @@ train_dataset = HuggingFaceDataset(train_data)
 
 ## Sharding a Dataset
 
-Currently, leveraging the Huggingface native sharding functionality is not supported. This is a work in progress,
-loadax will support it in the future, but for now avoid `dataset.shard` and use the `ShardingStrategy` interface
-or allow `DataloaderBuilder` to automatically shard the dataset. This is because huggingface's sharding algorithm is
-not guaranteed to be consistent with the sharding strategy that loadax leverages to optimize for JAX's device
-placement.
+Huggingface datasets natively support sharding, no need to wrap them in a `ShardedDataset`. Instead you can use the `split_dataset_by_node` method to get a shard of the dataset for a given node. This method takes in the world size and the rank of the node and returns a shard of the dataset. The shards are contiguous and consistent for a given `world_size`.
+
+```python
+from loadax.dataset.huggingface import HuggingFaceDataset
+
+dataset = HuggingFaceDataset.from_hub("stanfordnlp/imdb", split="train")
+shard = dataset.split_dataset_by_node(world_size=2, rank=0)
+```
 
 ::: loadax.dataset.huggingface.HuggingFaceDataset
         selection:
