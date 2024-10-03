@@ -19,8 +19,7 @@ from typing import TypedDict
 
 import datasets
 
-from loadax.dataset.huggingface import HuggingFaceDataset
-from loadax.dataset.transform import PartialDataset
+from loadax import HuggingFaceDataset, PartialDataset
 
 # You can construct a HuggingFaceDataset from the huggingface hub using the `from_hub`
 # static method. This method takes in the path to the dataset on the huggingface hub,
